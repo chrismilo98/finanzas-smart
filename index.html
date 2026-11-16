@@ -3,19 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanzas Smart COP - Gestor Financiero Personal 2026</title>
+    <title>Finanzas Smart COP 🇨🇴 - Presupuesto & Asesoría Financiera 2026</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Fuente Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Iconos FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js y jsPDF para gráficas y generación local de PDF -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
                     },
                 }
             }
@@ -23,10 +26,10 @@
     </script>
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             overflow-x: hidden;
         }
-        /* Estilo limpio para los deslizadores interactivos */
+        /* Estilo limpio y táctil para los deslizadores del simulador */
         input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
@@ -38,12 +41,12 @@
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
             background: #ffffff;
             border: 3px solid currentColor;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
             cursor: pointer;
             transition: transform 0.15s ease;
         }
@@ -51,22 +54,22 @@
             transform: scale(1.12);
         }
         input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
             background: #ffffff;
             border: 3px solid currentColor;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
             cursor: pointer;
             transition: transform 0.15s ease;
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen block antialiased">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
 
-    <!-- ENCABEZADO OSCURO EN FLUJO NORMAL DE BLOQUE (Sin superposiciones ni sticky conflictivo) -->
-    <header class="bg-slate-900 text-white shadow-md w-full block">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+    <!-- ENCABEZADO EN FLUJO NATURAL DE BLOQUE (#0f172a) -->
+    <header class="bg-[#0f172a] text-white shadow-md w-full block">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5 flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center space-x-3.5">
                 <div class="bg-emerald-500 text-white p-3 rounded-2xl shadow-lg shrink-0">
                     <i class="fa-solid fa-wallet text-xl"></i>
@@ -77,37 +80,36 @@
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2.5">
-                <span class="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                    <i class="fa-solid fa-calendar-day mr-2"></i> Corte Día 20
+            <div class="flex items-center gap-2.5">
+                <span id="header-payday-badge" class="inline-flex items-center gap-1.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-3.5 py-2 rounded-xl text-xs font-semibold">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <span>Corte Día 20</span>
                 </span>
-                <button type="button" onclick="openConfirmModal('reset')" class="inline-flex items-center text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl transition border border-slate-700 cursor-pointer" title="Restaurar datos predeterminados">
-                    <i class="fa-solid fa-rotate-right mr-1.5"></i> Reiniciar
+                <button type="button" onclick="confirmResetAll()" class="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Reiniciar</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- CONTENEDOR PRINCIPAL EN FLUJO NORMAL DE BLOQUE (Sin márgenes negativos ni altura forzada) -->
-    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 block">
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
 
         <!-- BARRA DE PESTAÑAS DE NAVEGACIÓN (Visible al 100%, con flex-wrap y amplio espaciado) -->
         <nav aria-label="Navegación principal" class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-wrap items-center gap-2.5">
             <button type="button" onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 bg-emerald-600 text-white shadow-sm cursor-pointer">
-                <i class="fa-solid fa-chart-pie"></i>
-                <span>Dashboard &amp; Resumen</span>
+                <span>📊 Dashboard &amp; Resumen</span>
             </button>
             <button type="button" onclick="switchTab('income')" id="tab-income" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200 cursor-pointer">
-                <i class="fa-solid fa-money-bill-wave text-emerald-600"></i>
-                <span>Ingresos y Ley</span>
+                <span>Ingresos</span>
             </button>
             <button type="button" onclick="switchTab('expenses')" id="tab-expenses" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200 cursor-pointer">
-                <i class="fa-solid fa-receipt text-rose-500"></i>
-                <span>Egresos y Gastos</span>
+                <span>Egresos</span>
             </button>
             <button type="button" onclick="switchTab('ai')" id="tab-ai" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200 cursor-pointer">
-                <i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i>
-                <span>Asesor IA (Gemini)</span>
+                <span>Asesor de IA</span>
+                <span id="api-key-dot" class="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" title="Configura tu API Key de Gemini para activar en la web"></span>
             </button>
         </nav>
 
@@ -116,13 +118,29 @@
         <!-- ========================================================= -->
         <section id="view-dashboard" class="tab-content space-y-6">
 
+            <!-- Barra Superior de Exportación PDF 100% Segura y Local -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 flex flex-wrap items-center gap-2">
+                        <span>Resumen Financiero &amp; Reporte Descargable</span>
+                        <span class="text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full">100% Offline / Privado</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-1">
+                        Genera un informe PDF profesional con tus cifras, distribución y gráficas directamente en tu navegador sin enviar datos a servidores externos.
+                    </p>
+                </div>
+                <button type="button" onclick="generateSecurePDF()" id="btn-generate-pdf" title="Generación 100% local en tu navegador sin enviar datos a servidores externos" class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold px-5 py-3 rounded-xl text-sm transition shadow-md inline-flex items-center justify-center gap-2 shrink-0 cursor-pointer">
+                    <span>🔒 Generar PDF Seguro del Resumen</span>
+                </button>
+            </div>
+
             <!-- Tarjetas Superiores de Indicadores Clave -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ingreso Neto Real</p>
                         <h3 id="dash-net-income" class="text-2xl font-extrabold text-slate-900 mt-1">$1.859.928</h3>
-                        <p class="text-xs text-emerald-600 mt-1 font-medium"><i class="fa-solid fa-circle-check mr-1"></i> Pago neto día 20</p>
+                        <p id="dash-payday-sub" class="text-xs text-emerald-600 mt-1 font-medium"><i class="fa-solid fa-circle-check mr-1"></i> Depósito día 20</p>
                     </div>
                     <div class="bg-emerald-50 text-emerald-600 p-3.5 rounded-2xl shrink-0">
                         <i class="fa-solid fa-wallet text-xl"></i>
@@ -153,9 +171,9 @@
 
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ahorro Mínimo Meta</p>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ahorro Mínimo Mensual</p>
                         <h3 id="dash-suggested-saving" class="text-2xl font-extrabold text-teal-600 mt-1">$120.000</h3>
-                        <p id="dash-annual-saving" class="text-xs text-teal-700 mt-1 font-medium">$1.440.000 al año</p>
+                        <p id="dash-annual-saving" class="text-xs text-teal-700 mt-1 font-medium">$1.440.000/año</p>
                     </div>
                     <div class="bg-teal-50 text-teal-600 p-3.5 rounded-2xl shrink-0">
                         <i class="fa-solid fa-shield-halved text-xl"></i>
@@ -171,18 +189,16 @@
                     </h2>
                     <span id="total-net-badge" class="text-xs font-semibold bg-slate-100 text-slate-700 px-3 py-1 rounded-full">100% = $1.859.928</span>
                 </div>
-                <!-- Gráfico de barra apilada -->
                 <div class="w-full h-5 bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
                     <div id="bar-expenses" class="bg-rose-500 h-full transition-all duration-300" style="width: 78.4%" title="Egresos Fijos"></div>
                     <div id="bar-savings" class="bg-emerald-500 h-full transition-all duration-300" style="width: 6.5%" title="Ahorro Mínimo"></div>
                     <div id="bar-leisure" class="bg-amber-400 h-full transition-all duration-300" style="width: 8.1%" title="Ocio y Cine"></div>
                     <div id="bar-emergency" class="bg-indigo-500 h-full transition-all duration-300" style="width: 7.0%" title="Colchón Urgencias"></div>
                 </div>
-                <!-- Leyenda del gráfico -->
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 text-xs">
                     <div class="flex items-center space-x-2">
                         <span class="w-3 h-3 rounded-full bg-rose-500 shrink-0"></span>
-                        <span class="text-slate-600">Egresos: <strong id="leg-expenses" class="text-slate-900">78.4%</strong></span>
+                        <span class="text-slate-600">Egresos Fijos: <strong id="leg-expenses" class="text-slate-900">78.4%</strong></span>
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="w-3 h-3 rounded-full bg-emerald-500 shrink-0"></span>
@@ -199,6 +215,39 @@
                 </div>
             </div>
 
+            <!-- Gráficas Visuales (Chart.js) incluidas en el Resumen y en el PDF -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Gráfica 1: Dona de Distribución del Ingreso Neto Real -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                    <div class="flex items-center justify-between gap-2 mb-4">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900 flex items-center">
+                                <i class="fa-solid fa-chart-pie text-emerald-600 mr-2"></i> Distribución del Ingreso Neto Real
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Proporción entre egresos fijos, ahorro, ocio y urgencias.</p>
+                        </div>
+                    </div>
+                    <div class="relative h-64 w-full flex items-center justify-center">
+                        <canvas id="chart-income-dist"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfica 2: Barras de Egresos por Categoría -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                    <div class="flex items-center justify-between gap-2 mb-4">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900 flex items-center">
+                                <i class="fa-solid fa-chart-column text-indigo-600 mr-2"></i> Egresos por Categoría (COP)
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Comparativa visual del peso mensual de cada categoría.</p>
+                        </div>
+                    </div>
+                    <div class="relative h-64 w-full flex items-center justify-center">
+                        <canvas id="chart-expenses-cat"></canvas>
+                    </div>
+                </div>
+            </div>
+
             <!-- Grid Principal: Desglose de Categorías + Simulador Interactivo de Flujo Libre -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
@@ -210,7 +259,7 @@
                                 <h2 class="text-base font-bold text-slate-900 flex items-center">
                                     <i class="fa-solid fa-layer-group text-indigo-500 mr-2"></i> Desglose de Egresos por Categoría
                                 </h2>
-                                <p class="text-xs text-slate-500 mt-0.5">Participación de cada categoría frente a tu ingreso neto real.</p>
+                                <p class="text-xs text-slate-500 mt-0.5">Peso de cada categoría frente a tu ingreso neto real.</p>
                             </div>
                             <button type="button" onclick="switchTab('expenses')" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-lg transition cursor-pointer">
                                 <i class="fa-solid fa-pen mr-1"></i> Editar Gastos
@@ -221,73 +270,75 @@
                         </div>
                     </div>
 
-                    <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                        <span><i class="fa-solid fa-calendar-check text-emerald-600 mr-1.5"></i> Recuerda pagar obligaciones entre el 20 y el 22.</span>
-                        <span class="font-bold text-slate-800">Total: <span id="cat-footer-total">$1.458.800</span></span>
+                    <div class="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                        <span id="cat-footer-reminder"><i class="fa-solid fa-calendar-check text-emerald-600 mr-1.5"></i> Paga tus obligaciones entre el día 20 y el 22.</span>
+                        <span class="font-bold text-slate-800">Total Egresos: <span id="cat-footer-total">$1.458.800</span></span>
                     </div>
                 </div>
 
-                <!-- Columna Derecha (5 cols): Simulador Interactivo de Distribución del Flujo Libre -->
+                <!-- Columna Derecha (5 cols): Simulador Interactivo de Flujo Libre ($401.128) -->
                 <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 text-white p-6 rounded-2xl shadow-lg lg:col-span-5 flex flex-col justify-between">
                     <div>
-                        <div class="flex items-center justify-between gap-2 mb-2">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                             <h2 class="text-base font-bold text-white flex items-center">
-                                <i class="fa-solid fa-sliders text-emerald-400 mr-2"></i> Distribuye tu Flujo Libre
+                                <i class="fa-solid fa-sliders text-emerald-400 mr-2"></i> Simulador de Flujo Libre
                             </h2>
-                            <button type="button" onclick="resetSlidersToDefault()" class="text-xs bg-white/10 hover:bg-white/20 text-emerald-300 border border-emerald-400/30 px-2.5 py-1 rounded-lg font-medium transition cursor-pointer" title="Volver a $120k Ahorro / $150k Ocio / $131k Urgencias">
+                            <button type="button" onclick="resetSlidersToDefault()" class="text-xs bg-white/10 hover:bg-white/20 text-emerald-300 border border-emerald-400/30 px-2.5 py-1 rounded-lg font-medium transition cursor-pointer" title="Volver a $120k Ahorro / $150k Ocio / $131.128 Urgencias">
                                 Sugerido Base
                             </button>
                         </div>
-                        <p class="text-xs text-slate-300 mb-5">Mueve los deslizadores para ajustar cuánto destinar de tus <strong id="slider-free-cash-label" class="text-white">$401.128</strong> libres:</p>
+                        <p class="text-xs text-slate-300 mb-3">
+                            Distribuye tus <strong id="slider-free-cash-label" class="text-white">$401.128</strong> libres mensuales:
+                        </p>
 
-                        <!-- Alerta si el flujo libre es negativo -->
-                        <div id="negative-cash-warning" class="hidden bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs p-3 rounded-xl mb-4">
-                            <i class="fa-solid fa-triangle-exclamation mr-1.5 text-rose-400"></i> Tus egresos superan tus ingresos netos. Reduce gastos en la pestaña "Egresos y Gastos".
+                        <!-- Insignia de estado de asignación -->
+                        <div id="allocation-status-banner" class="mb-4 p-3 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                            <span>✅ 100% del flujo libre asignado ($0 sin asignar)</span>
                         </div>
 
                         <div class="space-y-4">
-                            <!-- Deslizador 1: Ahorro Mínimo -->
+                            <!-- Deslizador 1: Ahorro Mínimo Sugerido -->
                             <div class="bg-white/10 p-3.5 rounded-xl border border-white/10">
                                 <div class="flex justify-between items-center text-sm mb-1.5">
                                     <span class="font-medium text-slate-100 flex items-center">
-                                        <i class="fa-solid fa-vault text-emerald-400 mr-2"></i> Ahorro Mínimo Fijo
+                                        <i class="fa-solid fa-vault text-emerald-400 mr-2"></i> Ahorro Mínimo Sugerido
                                     </span>
                                     <span class="font-extrabold text-emerald-300" id="rec-savings">$120.000</span>
                                 </div>
-                                <input type="range" id="slider-savings" min="0" max="100" value="30" oninput="handleSliderChange('savings')" class="w-full bg-slate-700 text-emerald-400">
+                                <input type="range" id="slider-savings" min="0" max="401128" step="1000" value="120000" oninput="handleSliderInput('savings')" class="w-full bg-slate-700 text-emerald-400">
                                 <div class="flex justify-between text-[11px] text-slate-400 mt-1">
-                                    <span>Transfiere el día 20</span>
-                                    <span id="pct-savings" class="font-semibold text-emerald-300">29.9% del flujo libre</span>
+                                    <span id="annual-savings-hint" class="text-emerald-300 font-semibold">$1.440.000/año</span>
+                                    <span id="pct-savings">29.9% del flujo libre</span>
                                 </div>
                             </div>
 
-                            <!-- Deslizador 2: Ocio / Cine / Salidas -->
+                            <!-- Deslizador 2: Presupuesto Ocio / Cine / Salidas -->
                             <div class="bg-white/10 p-3.5 rounded-xl border border-white/10">
                                 <div class="flex justify-between items-center text-sm mb-1.5">
                                     <span class="font-medium text-slate-100 flex items-center">
-                                        <i class="fa-solid fa-film text-amber-400 mr-2"></i> Ocio / Cine / Salidas
+                                        <i class="fa-solid fa-film text-amber-400 mr-2"></i> Presupuesto Ocio / Cine / Salidas
                                     </span>
                                     <span class="font-extrabold text-amber-300" id="rec-leisure">$150.000</span>
                                 </div>
-                                <input type="range" id="slider-leisure" min="0" max="100" value="37" oninput="handleSliderChange('leisure')" class="w-full bg-slate-700 text-amber-400">
+                                <input type="range" id="slider-leisure" min="0" max="401128" step="1000" value="150000" oninput="handleSliderInput('leisure')" class="w-full bg-slate-700 text-amber-400">
                                 <div class="flex justify-between text-[11px] text-slate-400 mt-1">
-                                    <span id="weekly-leisure-hint">~$37.500 por semana</span>
-                                    <span id="pct-leisure" class="font-semibold text-amber-300">37.4% del flujo libre</span>
+                                    <span id="weekly-leisure-hint" class="text-amber-300 font-semibold">$37.500/semana</span>
+                                    <span id="pct-leisure">37.4% del flujo libre</span>
                                 </div>
                             </div>
 
-                            <!-- Deslizador 3: Colchón de Urgencias -->
+                            <!-- Deslizador 3: Colchón de Urgencias / Imprevistos -->
                             <div class="bg-white/10 p-3.5 rounded-xl border border-white/10">
                                 <div class="flex justify-between items-center text-sm mb-1.5">
                                     <span class="font-medium text-slate-100 flex items-center">
-                                        <i class="fa-solid fa-kit-medical text-sky-400 mr-2"></i> Colchón de Urgencias
+                                        <i class="fa-solid fa-kit-medical text-sky-400 mr-2"></i> Colchón de Urgencias / Imprevistos
                                     </span>
                                     <span class="font-extrabold text-sky-300" id="rec-emergency">$131.128</span>
                                 </div>
-                                <input type="range" id="slider-emergency" min="0" max="100" value="33" oninput="handleSliderChange('emergency')" class="w-full bg-slate-700 text-sky-400">
+                                <input type="range" id="slider-emergency" min="0" max="401128" step="1000" value="131128" oninput="handleSliderInput('emergency')" class="w-full bg-slate-700 text-sky-400">
                                 <div class="flex justify-between text-[11px] text-slate-400 mt-1">
-                                    <span>Imprevistos y salud</span>
-                                    <span id="pct-emergency" class="font-semibold text-sky-300">32.7% del flujo libre</span>
+                                    <span>Reserva ante emergencias</span>
+                                    <span id="pct-emergency" class="text-sky-300 font-semibold">32.7% del flujo libre</span>
                                 </div>
                             </div>
                         </div>
@@ -296,7 +347,7 @@
                     <div class="mt-6 pt-4 border-t border-white/10">
                         <button type="button" onclick="switchTab('ai')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-4 rounded-xl text-sm transition shadow-lg flex items-center justify-center space-x-2 cursor-pointer">
                             <i class="fa-solid fa-wand-magic-sparkles"></i>
-                            <span>Pedir Consejos al Asesor IA</span>
+                            <span>Consultar al Asesor de IA</span>
                         </button>
                     </div>
                 </div>
@@ -310,35 +361,22 @@
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
                     <div>
-                        <h2 class="text-lg font-bold text-slate-900">Configuración de Ingresos y Deducciones de Ley (2026)</h2>
-                        <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Valores configurados con el SMLMV Colombia 2026, auxilio de transporte y aportes obligatorios del 4%.</p>
+                        <h2 class="text-lg font-bold text-slate-900">Ingresos y Deducciones de Ley (Colombia 2026)</h2>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Configurado con el SMLMV 2026, auxilio de transporte y aportes obligatorios de seguridad social.</p>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button type="button" onclick="resetIncomeTo2026()" class="text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl transition cursor-pointer">
-                            <i class="fa-solid fa-rotate-left mr-1"></i> Valores SMLMV 2026
-                        </button>
-                        <span class="bg-emerald-50 text-emerald-700 text-xs px-3 py-2 rounded-xl font-semibold border border-emerald-200">
-                            Pago: Día 20
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Toggle cálculo automático del 4% -->
-                <div class="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex items-center space-x-3">
-                        <input type="checkbox" id="chk-auto-law" checked onchange="calculateIncome()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer">
-                        <label for="chk-auto-law" class="text-sm font-medium text-slate-700 cursor-pointer">
-                            Calcular automáticamente Salud (4%) y Pensión (4%) sobre el salario básico
-                        </label>
-                    </div>
-                    <span class="text-xs text-slate-500">El auxilio de transporte no tiene deducciones de ley.</span>
+                    <button type="button" onclick="resetIncomeTo2026()" class="text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-xl transition cursor-pointer">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Restaurar SMLMV 2026
+                    </button>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Columna Devengado -->
+                    <!-- Columna 1: Ingresos y Día de Pago -->
                     <div class="space-y-4">
                         <div>
-                            <label for="inp-salary" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Salario Básico Mensual (SMLMV 2026)</label>
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label for="inp-salary" class="text-xs font-bold text-slate-700 uppercase">Salario Básico Mensual (SMLMV 2026)</label>
+                                <span id="fmt-salary" class="text-xs font-bold text-emerald-700">$1.750.905</span>
+                            </div>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-semibold">$</span>
                                 <input type="number" id="inp-salary" value="1750905" min="0" oninput="calculateIncome()" class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
@@ -346,64 +384,95 @@
                         </div>
 
                         <div>
-                            <label for="inp-transport" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Auxilio de Transporte 2026</label>
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label for="inp-transport" class="text-xs font-bold text-slate-700 uppercase">Auxilio de Transporte 2026</label>
+                                <span id="fmt-transport" class="text-xs font-bold text-emerald-700">$249.095</span>
+                            </div>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-semibold">$</span>
                                 <input type="number" id="inp-transport" value="249095" min="0" oninput="calculateIncome()" class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                             </div>
+                            <p class="text-[11px] text-slate-400 mt-1">El auxilio de transporte no tiene descuentos de salud ni pensión.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <div class="flex justify-between items-center mb-1.5">
+                                    <label for="inp-extras" class="text-xs font-bold text-slate-700 uppercase">Ingresos Extra / Bonos</label>
+                                    <span id="fmt-extras" class="text-xs font-bold text-emerald-700">$0</span>
+                                </div>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-semibold">$</span>
+                                    <input type="number" id="inp-extras" value="0" min="0" oninput="calculateIncome()" class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="inp-payday" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Día de Pago Mensual</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400"><i class="fa-solid fa-calendar-day"></i></span>
+                                    <input type="number" id="inp-payday" value="20" min="1" max="31" oninput="calculateIncome()" class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Columna Deducciones -->
-                    <div class="space-y-4">
+                    <!-- Columna 2: Deducciones de Ley Colombia -->
+                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col justify-between space-y-4">
                         <div>
-                            <label for="inp-health" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Deducción Salud (4% sobre salario)</label>
-                            <div class="relative">
-                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-rose-400 font-semibold">-$</span>
-                                <input type="number" id="inp-health" value="70036" min="0" oninput="calculateIncome()" class="w-full pl-9 pr-4 py-2.5 bg-rose-50/40 border border-slate-300 rounded-xl text-sm font-bold text-rose-600 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <h3 class="text-sm font-bold text-slate-900 mb-1">Deducciones de Nómina (Ley Colombia)</h3>
+                            <p class="text-xs text-slate-500 mb-4">Se calculan sobre el salario básico mensual (4% Salud + 4% Pensión).</p>
+
+                            <div class="space-y-3">
+                                <label for="chk-health" class="flex items-center justify-between p-3.5 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-emerald-400 transition">
+                                    <div class="flex items-center space-x-3">
+                                        <input type="checkbox" id="chk-health" checked onchange="calculateIncome()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer">
+                                        <div>
+                                            <span class="text-sm font-semibold text-slate-800 block">Descuento Salud (4%)</span>
+                                            <span class="text-xs text-slate-500">Aporte obligatorio EPS</span>
+                                        </div>
+                                    </div>
+                                    <span id="display-health-deduction" class="text-sm font-extrabold text-rose-600">-$70.036</span>
+                                </label>
+
+                                <label for="chk-pension" class="flex items-center justify-between p-3.5 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-emerald-400 transition">
+                                    <div class="flex items-center space-x-3">
+                                        <input type="checkbox" id="chk-pension" checked onchange="calculateIncome()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer">
+                                        <div>
+                                            <span class="text-sm font-semibold text-slate-800 block">Descuento Pensión (4%)</span>
+                                            <span class="text-xs text-slate-500">Aporte obligatorio Fondo de Pensiones</span>
+                                        </div>
+                                    </div>
+                                    <span id="display-pension-deduction" class="text-sm font-extrabold text-rose-600">-$70.036</span>
+                                </label>
                             </div>
                         </div>
 
-                        <div>
-                            <label for="inp-pension" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Deducción Pensión (4% sobre salario)</label>
-                            <div class="relative">
-                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-rose-400 font-semibold">-$</span>
-                                <input type="number" id="inp-pension" value="70036" min="0" oninput="calculateIncome()" class="w-full pl-9 pr-4 py-2.5 bg-rose-50/40 border border-slate-300 rounded-xl text-sm font-bold text-rose-600 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                            </div>
+                        <div class="pt-3 border-t border-slate-200 text-xs text-slate-500 flex justify-between">
+                            <span>Total descuentos de seguridad social:</span>
+                            <strong id="display-total-deductions-inline" class="text-rose-600">-$140.072</strong>
                         </div>
                     </div>
                 </div>
 
-                <!-- Sección de Ingresos Extra / Adicionales -->
-                <div class="mt-8 pt-6 border-t border-slate-200">
-                    <h3 class="text-sm font-bold text-slate-900 mb-3 flex items-center">
-                        <i class="fa-solid fa-plus-circle text-emerald-600 mr-2"></i> Ingresos Extra / Adicionales (Horas extras, bonos, etc.)
-                    </h3>
-                    <form onsubmit="addExtraIncome(event)" class="flex flex-col sm:flex-row gap-3">
-                        <input type="text" id="extra-inc-name" required placeholder="Concepto (Ej. Horas extras, Bono...)" class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                        <div class="relative sm:w-52">
-                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-semibold">$</span>
-                            <input type="number" id="extra-inc-amount" required min="1" placeholder="Monto COP" class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                        </div>
-                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition cursor-pointer shrink-0">
-                            Agregar Extra
-                        </button>
-                    </form>
-                    <div id="extra-incomes-list" class="mt-3 space-y-2">
-                        <!-- Lista dinámica de ingresos extra -->
+                <!-- Caja Resumen en Vivo: Bruto, Deducciones y Depósito Neto el Día 20 -->
+                <div class="mt-8 bg-emerald-50 border border-emerald-200 rounded-2xl p-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                    <div class="bg-white/80 p-4 rounded-xl border border-emerald-200/70">
+                        <p class="text-xs font-bold text-slate-500 uppercase">Ingreso Bruto Total</p>
+                        <p id="summary-gross-income" class="text-xl font-extrabold text-slate-900 mt-1">$2.000.000</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Salario + Transporte + Extras</p>
                     </div>
-                </div>
 
-                <!-- Caja Resumen de Ingreso Neto Real -->
-                <div class="mt-8 bg-emerald-50 border border-emerald-200 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div>
-                        <p class="text-xs font-extrabold text-emerald-900 uppercase tracking-wide">Total Ingreso Neto Real Recibido el Día 20</p>
-                        <p id="income-formula-detail" class="text-xs text-emerald-700 mt-1">
-                            $1.750.905 (Salario) + $249.095 (Auxilio) + $0 (Extras) - $140.072 (Salud y Pensión)
-                        </p>
+                    <div class="bg-white/80 p-4 rounded-xl border border-rose-200/70">
+                        <p class="text-xs font-bold text-slate-500 uppercase">Total Deducciones</p>
+                        <p id="summary-total-deductions" class="text-xl font-extrabold text-rose-600 mt-1">-$140.072</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Salud (4%) + Pensión (4%)</p>
                     </div>
-                    <div id="display-net-income" class="text-3xl font-extrabold text-emerald-700 shrink-0">
-                        $1.859.928
+
+                    <div class="bg-emerald-600 text-white p-4 rounded-xl shadow-md">
+                        <p id="summary-net-label" class="text-xs font-bold text-emerald-100 uppercase">Depósito Neto el Día 20</p>
+                        <p id="display-net-income" class="text-2xl sm:text-3xl font-extrabold mt-1">$1.859.928</p>
+                        <p class="text-[11px] text-emerald-100 mt-0.5">Dinero real disponible para tu mes</p>
                     </div>
                 </div>
             </div>
@@ -428,23 +497,24 @@
                         </div>
 
                         <div>
-                            <label for="expense-category" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Categoría</label>
-                            <select id="expense-category" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                                <option value="Vivienda">Vivienda</option>
-                                <option value="Alimentación">Alimentación</option>
-                                <option value="Deudas/Tarjetas">Deudas/Tarjetas</option>
-                                <option value="Servicios">Servicios</option>
-                                <option value="Seguros">Seguros</option>
-                                <option value="Otros">Otros</option>
-                            </select>
-                        </div>
-
-                        <div>
                             <label for="expense-amount" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Monto Mensual (COP)</label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-semibold">$</span>
                                 <input type="number" id="expense-amount" required min="1" placeholder="0" class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                             </div>
+                        </div>
+
+                        <div>
+                            <label for="expense-category" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Categoría</label>
+                            <select id="expense-category" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                <option value="Vivienda">Vivienda</option>
+                                <option value="Alimentación">Alimentación</option>
+                                <option value="Deudas / Tarjetas">Deudas / Tarjetas</option>
+                                <option value="Servicios">Servicios</option>
+                                <option value="Seguros / Salud">Seguros / Salud</option>
+                                <option value="Transporte">Transporte</option>
+                                <option value="Otros">Otros</option>
+                            </select>
                         </div>
 
                         <div class="flex gap-2.5 pt-2">
@@ -456,6 +526,14 @@
                             </button>
                         </div>
                     </form>
+
+                    <!-- Subtotales por Categoría -->
+                    <div class="mt-6 pt-5 border-t border-slate-200">
+                        <h3 class="text-xs font-bold text-slate-700 uppercase mb-3">Subtotales por Categoría</h3>
+                        <div id="category-subtotals-list" class="space-y-2 text-xs">
+                            <!-- Generado por JS -->
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Listado de Egresos Clasificados (8 cols) -->
@@ -463,7 +541,7 @@
                     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                         <div>
                             <h2 class="text-base font-bold text-slate-900">Listado de Egresos Mensuales</h2>
-                            <p class="text-xs text-slate-500">Obligaciones sincronizadas para cubrir con tu pago del día 20.</p>
+                            <p id="expenses-payday-hint" class="text-xs text-slate-500">Obligaciones sincronizadas para cubrir con tu pago del día 20.</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <span id="expenses-count-badge" class="bg-slate-100 text-slate-700 text-xs px-3 py-1.5 rounded-xl font-semibold">6 ítems</span>
@@ -471,14 +549,15 @@
                         </div>
                     </div>
 
-                    <!-- Filtro por categoría -->
+                    <!-- Píldoras de filtro por categoría -->
                     <div class="flex flex-wrap gap-2 mb-4 pb-3 border-b border-slate-100">
                         <button type="button" onclick="filterExpenses('Todas')" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white cursor-pointer" data-cat="Todas">Todas</button>
                         <button type="button" onclick="filterExpenses('Vivienda')" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer" data-cat="Vivienda">Vivienda</button>
                         <button type="button" onclick="filterExpenses('Alimentación')" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer" data-cat="Alimentación">Alimentación</button>
-                        <button type="button" onclick="filterExpenses('Deudas/Tarjetas')" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer" data-cat="Deudas/Tarjetas">Deudas/Tarjetas</button>
+                        <button type="button" onclick="filterExpenses('Deudas / Tarjetas')" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer" data-cat="Deudas / Tarjetas">Deudas / Tarjetas</button>
                         <button type="button" onclick="filterExpenses('Servicios')" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer" data-cat="Servicios">Servicios</button>
-                        <button type="button" onclick="filterExpenses('Seguros')" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer" data-cat="Seguros">Seguros</button>
+                        <button type="button" onclick="filterExpenses('Seguros / Salud')" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer" data-cat="Seguros / Salud">Seguros / Salud</button>
+                        <button type="button" onclick="filterExpenses('Transporte')" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer" data-cat="Transporte">Transporte</button>
                         <button type="button" onclick="filterExpenses('Otros')" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer" data-cat="Otros">Otros</button>
                     </div>
 
@@ -491,9 +570,54 @@
         </section>
 
         <!-- ========================================================= -->
-        <!-- PESTAÑA 4: ASESOR IA (GEMINI)                             -->
+        <!-- PESTAÑA 4: ASESOR DE IA (GEMINI) - SEGURA PARA GITHUB     -->
         <!-- ========================================================= -->
-        <section id="view-ai" class="tab-content hidden">
+        <section id="view-ai" class="tab-content hidden space-y-6">
+
+            <!-- PANEL SUPERIOR: CONFIGURACIÓN SEGURA DE API KEY EN EL NAVEGADOR -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
+                    <div class="max-w-2xl">
+                        <div class="flex flex-wrap items-center gap-2.5 mb-1.5">
+                            <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center">
+                                <i class="fa-solid fa-shield-halved text-emerald-600 mr-2"></i> Configuración Segura de API Key (Para GitHub Pages)
+                            </h2>
+                            <span id="api-key-status-badge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                                🔑 Opcional en Vista Previa • Requerida en GitHub Pages
+                            </span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-slate-600">
+                            En la vista previa funciona automáticamente. Para usarla en tu web de <strong>GitHub Pages</strong>, pega tu clave gratuita de Google AI Studio: se guarda solo en tu dispositivo (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono text-xs">localStorage</code>) y <strong>nunca queda expuesta</strong> en GitHub.
+                        </p>
+                    </div>
+                    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3.5 py-2.5 rounded-xl transition shrink-0">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        <span>Obtener API Key gratis en Google AI Studio</span>
+                    </a>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-2.5">
+                    <div class="relative flex-1">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                            <i class="fa-solid fa-key"></i>
+                        </span>
+                        <input type="password" id="gemini-api-key-input" placeholder="Pega aquí tu API Key de Gemini (AIza...)" autocomplete="off" class="w-full pl-10 pr-12 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <button type="button" onclick="toggleApiKeyVisibility()" id="toggle-key-vis-btn" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer" title="Mostrar u ocultar clave">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <button type="button" onclick="saveApiKey()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition shadow-sm inline-flex items-center justify-center gap-2 cursor-pointer shrink-0">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>Guardar clave</span>
+                    </button>
+                    <button type="button" onclick="deleteApiKey()" id="delete-key-btn" class="bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 hover:border-rose-200 font-semibold px-4 py-2.5 rounded-xl text-sm transition inline-flex items-center justify-center gap-2 cursor-pointer shrink-0">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>Eliminar clave</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- PANEL DE CONSULTA Y RESPUESTA DE GEMINI -->
             <div class="bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 text-white p-6 sm:p-8 rounded-3xl shadow-xl border border-indigo-500/20">
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
                     <div>
@@ -501,9 +625,9 @@
                             <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
                             <span>Asesoría Financiera con Gemini AI</span>
                         </div>
-                        <h2 class="text-2xl font-bold tracking-tight">Tu Plan Financiero Personalizado (Colombia 2026)</h2>
-                        <p class="text-sm text-slate-300 mt-1 max-w-2xl">
-                            Analizamos tu ingreso neto real ($1.859.928 COP), tus gastos fijos ($1.458.800 COP) y tu meta de ahorro, ocio y urgencias para darte recomendaciones accionables.
+                        <h2 class="text-xl sm:text-2xl font-bold tracking-tight">Tu Plan Financiero Personalizado (Colombia 2026)</h2>
+                        <p id="ai-live-summary-subtitle" class="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
+                            Analizamos tu ingreso neto real ($1.859.928 COP), tus gastos fijos ($1.458.800 COP) y tu meta de ahorro, ocio y urgencias.
                         </p>
                     </div>
                     <button type="button" onclick="askGeminiAdvisor('general')" id="ai-btn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 px-6 rounded-2xl text-sm transition shadow-lg inline-flex items-center justify-center space-x-2 shrink-0 cursor-pointer">
@@ -513,24 +637,44 @@
                 </div>
 
                 <!-- Botones de consulta rápida -->
-                <div class="flex flex-wrap gap-2 mb-6">
-                    <button type="button" onclick="askGeminiAdvisor('dia20')" class="text-xs bg-white/10 hover:bg-white/20 text-slate-200 border border-white/15 px-3.5 py-2 rounded-xl transition cursor-pointer">
-                        <i class="fa-solid fa-calendar-check text-emerald-400 mr-1.5"></i> ¿Cómo organizarme el día 20?
+                <div class="flex flex-wrap gap-2 mb-5">
+                    <button type="button" onclick="askGeminiAdvisor('dia20')" class="bg-white/10 hover:bg-white/20 text-slate-100 text-xs font-medium px-3.5 py-2 rounded-xl border border-white/10 transition cursor-pointer">
+                        📅 ¿Cómo organizarme el día 20?
                     </button>
-                    <button type="button" onclick="askGeminiAdvisor('tarjeta')" class="text-xs bg-white/10 hover:bg-white/20 text-slate-200 border border-white/15 px-3.5 py-2 rounded-xl transition cursor-pointer">
-                        <i class="fa-solid fa-credit-card text-rose-400 mr-1.5"></i> Estrategia para salir de la tarjeta ($300k)
+                    <button type="button" onclick="askGeminiAdvisor('tarjeta')" class="bg-white/10 hover:bg-white/20 text-slate-100 text-xs font-medium px-3.5 py-2 rounded-xl border border-white/10 transition cursor-pointer">
+                        💳 Estrategia para salir de la tarjeta
                     </button>
-                    <button type="button" onclick="askGeminiAdvisor('ahorro')" class="text-xs bg-white/10 hover:bg-white/20 text-slate-200 border border-white/15 px-3.5 py-2 rounded-xl transition cursor-pointer">
-                        <i class="fa-solid fa-piggy-bank text-amber-400 mr-1.5"></i> ¿Dónde guardar mi ahorro en Colombia?
+                    <button type="button" onclick="askGeminiAdvisor('ahorro')" class="bg-white/10 hover:bg-white/20 text-slate-100 text-xs font-medium px-3.5 py-2 rounded-xl border border-white/10 transition cursor-pointer">
+                        🐷 ¿Dónde guardar mi ahorro en Colombia?
+                    </button>
+                    <button type="button" onclick="askGeminiAdvisor('ocio')" class="bg-white/10 hover:bg-white/20 text-slate-100 text-xs font-medium px-3.5 py-2 rounded-xl border border-white/10 transition cursor-pointer">
+                        🎬 Optimizar mi presupuesto de ocio
                     </button>
                 </div>
 
-                <!-- Contenedor de respuesta de Gemini -->
-                <div id="ai-response-area" class="bg-slate-900/90 border border-slate-700/70 rounded-2xl p-6 text-slate-200 text-sm leading-relaxed min-h-[220px] flex flex-col justify-center">
-                    <div class="text-center text-slate-400 py-8">
-                        <i class="fa-solid fa-robot text-4xl mb-3 text-indigo-400 opacity-90"></i>
-                        <p class="font-medium text-slate-300">Haz clic en "Generar Análisis Completo" o elige una pregunta rápida.</p>
-                        <p class="text-xs text-slate-500 mt-1">La IA evaluará tus cifras exactas actualizadas en tiempo real.</p>
+                <!-- Consulta personalizada -->
+                <form onsubmit="handleCustomAiSubmit(event)" class="flex flex-col sm:flex-row gap-2.5 mb-6">
+                    <input type="text" id="custom-ai-question" placeholder="Escribe una pregunta personalizada sobre tus finanzas..." class="flex-1 bg-white/10 border border-white/15 text-white placeholder-slate-400 text-xs sm:text-sm px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer shrink-0">
+                        <i class="fa-solid fa-paper-plane mr-1.5"></i>Preguntar
+                    </button>
+                </form>
+
+                <!-- Barra para copiar diagnóstico -->
+                <div id="ai-copy-bar" class="hidden items-center justify-between bg-white/5 border border-white/10 px-4 py-2 rounded-t-2xl text-xs text-slate-300">
+                    <span><i class="fa-solid fa-sparkles text-emerald-400 mr-1.5"></i>Diagnóstico generado con tus cifras actuales</span>
+                    <button type="button" onclick="copyAiResponse()" class="text-emerald-300 hover:text-emerald-200 font-semibold inline-flex items-center gap-1.5 cursor-pointer">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>Copiar diagnóstico</span>
+                    </button>
+                </div>
+
+                <!-- Área de respuesta de Gemini -->
+                <div id="ai-response-area" class="bg-slate-950/60 border border-white/10 rounded-2xl p-5 sm:p-6 min-h-[160px]">
+                    <div class="text-center py-6 text-slate-400 space-y-2">
+                        <i class="fa-solid fa-robot text-3xl text-indigo-400"></i>
+                        <p class="text-sm font-medium text-slate-200">Listo para analizar tu presupuesto personalizado</p>
+                        <p class="text-xs max-w-md mx-auto">Presiona <strong>Generar Análisis Completo</strong> o elige cualquiera de los temas rápidos para recibir consejos accionables.</p>
                     </div>
                 </div>
             </div>
@@ -539,472 +683,973 @@
     </main>
 
     <!-- PIE DE PÁGINA -->
-    <footer class="bg-white border-t border-slate-200 py-4 px-4 text-center text-xs text-slate-500 mt-8">
-        Finanzas Smart COP &bull; Diseñado para optimizar tu presupuesto y ahorro en Colombia (2026) con corte los 20 de cada mes.
+    <footer class="bg-white border-t border-slate-200 py-4 px-4 text-center text-xs text-slate-500 mt-10">
+        Finanzas Smart COP 🇨🇴 • Diseñado para optimizar tu presupuesto y ahorro en Colombia (2026) con corte los 20 de cada mes.
     </footer>
 
-    <!-- MODAL DE CONFIRMACIÓN PERSONALIZADO (Sin usar window.confirm) -->
-    <div id="confirm-modal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-            <div class="flex items-center space-x-3 mb-3">
-                <div class="bg-rose-100 text-rose-600 p-2.5 rounded-xl">
+    <!-- MODAL DE CONFIRMACIÓN PERSONALIZADO (Sin window.confirm / alert) -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-100 text-amber-600 p-3 rounded-xl">
                     <i class="fa-solid fa-triangle-exclamation text-lg"></i>
                 </div>
-                <h3 id="modal-title" class="text-base font-bold text-slate-900">Confirmar acción</h3>
+                <div>
+                    <h3 id="modal-title" class="text-base font-bold text-slate-900">Confirmar acción</h3>
+                    <p id="modal-message" class="text-xs text-slate-500 mt-0.5">¿Deseas restaurar los valores iniciales de Colombia 2026?</p>
+                </div>
             </div>
-            <p id="modal-message" class="text-sm text-slate-600 mb-6">¿Estás seguro de continuar?</p>
-            <div class="flex justify-end gap-3">
-                <button type="button" onclick="closeConfirmModal()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer">
+            <div class="flex justify-end gap-2.5 pt-2">
+                <button type="button" onclick="closeConfirmModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer">
                     Cancelar
                 </button>
-                <button type="button" id="modal-confirm-btn" class="px-4 py-2 rounded-xl text-sm font-semibold bg-rose-600 hover:bg-rose-700 text-white transition cursor-pointer">
-                    Confirmar
+                <button type="button" id="modal-confirm-btn" class="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white cursor-pointer">
+                    Sí, restaurar
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- NOTIFICACIÓN TOAST -->
-    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-24 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 text-sm border border-slate-700">
-        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
-        <span id="toast-msg">Acción realizada con éxito</span>
+    <!-- NOTIFICACIÓN TOAST FLOTANTE -->
+    <div id="toast-notification" class="fixed bottom-5 right-5 z-50 hidden items-center gap-2.5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 text-xs font-semibold">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-message">Guardado correctamente</span>
     </div>
 
-    <!-- LÓGICA DE LA APLICACIÓN -->
     <script>
-        // Estado inicial predeterminado con los valores exactos de Colombia 2026 y gastos del usuario
-        const defaultState = {
+        // =========================================================
+        // ESTADO GLOBAL Y PERSISTENCIA EN LOCALSTORAGE
+        // =========================================================
+        const STORAGE_KEY = 'finanzas_smart_cop_2026_v4';
+        const GEMINI_KEY_STORAGE = 'finanzas_smart_gemini_api_key';
+
+        const DEFAULT_STATE = {
             income: {
                 salary: 1750905,
                 transport: 249095,
-                health: 70036,
-                pension: 70036,
-                autoLaw: true,
-                extras: []
+                extras: 0,
+                payday: 20,
+                healthDeductionEnabled: true,
+                pensionDeductionEnabled: true
             },
             expenses: [
-                { id: "exp-1", name: "Arriendo", category: "Vivienda", amount: 600000 },
-                { id: "exp-2", name: "Comida / Mercado", category: "Alimentación", amount: 400000 },
-                { id: "exp-3", name: "Tarjeta de Crédito", category: "Deudas/Tarjetas", amount: 300000 },
-                { id: "exp-4", name: "Internet", category: "Servicios", amount: 69900 },
-                { id: "exp-5", name: "Plan de Celular", category: "Servicios", amount: 44900 },
-                { id: "exp-6", name: "Seguro", category: "Seguros", amount: 44000 }
+                { id: 'exp-1', name: 'Arriendo', amount: 600000, category: 'Vivienda' },
+                { id: 'exp-2', name: 'Comida / Mercado', amount: 400000, category: 'Alimentación' },
+                { id: 'exp-3', name: 'Tarjeta de Crédito', amount: 300000, category: 'Deudas / Tarjetas' },
+                { id: 'exp-4', name: 'Internet', amount: 69900, category: 'Servicios' },
+                { id: 'exp-5', name: 'Plan de Celular', amount: 44900, category: 'Servicios' },
+                { id: 'exp-6', name: 'Seguro', amount: 44000, category: 'Seguros / Salud' }
             ],
-            // Porcentajes exactos que producen $120.000 Ahorro, $150.000 Ocio y $131.128 Urgencias sobre $401.128
             allocation: {
-                savingsPct: 29.915638,
-                leisurePct: 37.394547,
-                emergencyPct: 32.689815
+                savings: 120000,
+                leisure: 150000,
+                emergency: 131128
             }
         };
 
-        // Cargar estado desde localStorage (con migración segura de categorías antiguas)
         function loadInitialState() {
             try {
-                const saved = localStorage.getItem('finanzas_smart_cop_v2');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    if (parsed && parsed.income && Array.isArray(parsed.expenses)) {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && parsed.income && Array.isArray(parsed.expenses) && parsed.allocation) {
                         return parsed;
                     }
                 }
             } catch (e) {
-                // Ignorar error de almacenamiento
+                // Si localStorage no está disponible, usar estado por defecto
             }
-            return JSON.parse(JSON.stringify(defaultState));
+            return JSON.parse(JSON.stringify(DEFAULT_STATE));
         }
 
         let appState = loadInitialState();
         let currentExpenseFilter = 'Todas';
-        let pendingModalAction = null;
+        let incomeDoughnutChart = null;
+        let expensesBarChart = null;
+        let lastAiPlainText = '';
+        let toastTimer = null;
 
         function saveState() {
             try {
-                localStorage.setItem('finanzas_smart_cop_v2', JSON.stringify(appState));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
             } catch (e) {
-                // Ignorar error de cuota
+                // Ignorar error de cuota o modo privado
             }
         }
 
-        // Formateador de moneda en Pesos Colombianos (COP)
-        function formatCOP(amount) {
-            return new Intl.NumberFormat('es-CO', {
-                style: 'currency',
-                currency: 'COP',
-                maximumFractionDigits: 0
-            }).format(Math.round(amount));
+        function formatCOP(value) {
+            const num = Math.round(Number(value) || 0);
+            const sign = num < 0 ? '-' : '';
+            return sign + '$' + Math.abs(num).toLocaleString('es-CO');
         }
 
-        // Notificación Toast
-        function showToast(msg, type = 'success') {
-            const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toast-msg');
-            const toastIcon = document.getElementById('toast-icon');
+        // =========================================================
+        // NAVEGACIÓN ENTRE PESTAÑAS
+        // =========================================================
+        function switchTab(tabName) {
+            const views = document.querySelectorAll('.tab-content');
+            views.forEach(view => view.classList.add('hidden'));
 
-            toastMsg.textContent = msg;
-            toastIcon.className = type === 'success'
-                ? 'fa-solid fa-circle-check text-emerald-400 text-lg'
-                : 'fa-solid fa-circle-info text-amber-400 text-lg';
-
-            toast.classList.remove('translate-y-24', 'opacity-0');
-            setTimeout(() => {
-                toast.classList.add('translate-y-24', 'opacity-0');
-            }, 3000);
-        }
-
-        // Modal de Confirmación Personalizado
-        function openConfirmModal(actionType, itemId = null) {
-            const modal = document.getElementById('confirm-modal');
-            const title = document.getElementById('modal-title');
-            const message = document.getElementById('modal-message');
-            const confirmBtn = document.getElementById('modal-confirm-btn');
-
-            if (actionType === 'reset') {
-                title.textContent = 'Restaurar datos iniciales';
-                message.textContent = 'Se volverán a cargar el salario mínimo 2026 ($1.750.905) y tus 6 gastos base ($1.458.800).';
-                pendingModalAction = () => {
-                    appState = JSON.parse(JSON.stringify(defaultState));
-                    saveState();
-                    initApp();
-                    showToast('Datos restaurados a los valores base');
-                };
-            } else if (actionType === 'deleteExpense') {
-                title.textContent = 'Eliminar egreso';
-                message.textContent = '¿Deseas eliminar este gasto de tu presupuesto mensual?';
-                pendingModalAction = () => {
-                    appState.expenses = appState.expenses.filter(item => item.id !== itemId);
-                    saveState();
-                    updateDashboard();
-                    showToast('Egreso eliminado correctamente', 'info');
-                };
+            const targetView = document.getElementById(`view-${tabName}`);
+            if (targetView) {
+                targetView.classList.remove('hidden');
             }
 
-            confirmBtn.onclick = () => {
-                if (pendingModalAction) pendingModalAction();
-                closeConfirmModal();
-            };
-
-            modal.classList.remove('hidden');
-        }
-
-        function closeConfirmModal() {
-            document.getElementById('confirm-modal').classList.add('hidden');
-            pendingModalAction = null;
-        }
-
-        // Navegación entre Pestañas
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(btn => {
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabButtons.forEach(btn => {
                 btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm');
                 btn.classList.add('bg-slate-50', 'text-slate-700', 'hover:bg-slate-100', 'border', 'border-slate-200');
             });
 
-            document.getElementById(`view-${tabId}`).classList.remove('hidden');
-            const activeBtn = document.getElementById(`tab-${tabId}`);
-            activeBtn.classList.remove('bg-slate-50', 'text-slate-700', 'hover:bg-slate-100', 'border', 'border-slate-200');
-            activeBtn.classList.add('bg-emerald-600', 'text-white', 'shadow-sm');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-50', 'text-slate-700', 'hover:bg-slate-100', 'border', 'border-slate-200');
+                activeBtn.classList.add('bg-emerald-600', 'text-white', 'shadow-sm');
+            }
+
+            if (tabName === 'dashboard') {
+                updateDashboard();
+            }
         }
 
         // =========================================================
-        // LÓGICA DE INGRESOS Y DEDUCCIONES DE LEY (2026)
+        // CÁLCULO DE INGRESOS Y DEDUCCIONES DE LEY (COLOMBIA 2026)
         // =========================================================
+        function getIncomeBreakdown() {
+            const salary = Math.max(0, Number(appState.income.salary) || 0);
+            const transport = Math.max(0, Number(appState.income.transport) || 0);
+            const extras = Math.max(0, Number(appState.income.extras) || 0);
+            const payday = Math.min(31, Math.max(1, Number(appState.income.payday) || 20));
+
+            const healthDeduction = appState.income.healthDeductionEnabled ? Math.round(salary * 0.04) : 0;
+            const pensionDeduction = appState.income.pensionDeductionEnabled ? Math.round(salary * 0.04) : 0;
+            const totalDeductions = healthDeduction + pensionDeduction;
+            const gross = salary + transport + extras;
+            const net = Math.max(0, gross - totalDeductions);
+
+            return {
+                salary,
+                transport,
+                extras,
+                payday,
+                healthDeduction,
+                pensionDeduction,
+                totalDeductions,
+                gross,
+                net
+            };
+        }
+
+        function getNetIncome() {
+            return getIncomeBreakdown().net;
+        }
+
+        function getTotalExpenses() {
+            return appState.expenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+        }
+
         function calculateIncome() {
-            const salary = parseFloat(document.getElementById('inp-salary').value) || 0;
-            const transport = parseFloat(document.getElementById('inp-transport').value) || 0;
-            const autoLaw = document.getElementById('chk-auto-law').checked;
+            appState.income.salary = Math.max(0, Number(document.getElementById('inp-salary').value) || 0);
+            appState.income.transport = Math.max(0, Number(document.getElementById('inp-transport').value) || 0);
+            appState.income.extras = Math.max(0, Number(document.getElementById('inp-extras').value) || 0);
+            appState.income.payday = Math.min(31, Math.max(1, Number(document.getElementById('inp-payday').value) || 20));
+            appState.income.healthDeductionEnabled = document.getElementById('chk-health').checked;
+            appState.income.pensionDeductionEnabled = document.getElementById('chk-pension').checked;
 
-            let health = parseFloat(document.getElementById('inp-health').value) || 0;
-            let pension = parseFloat(document.getElementById('inp-pension').value) || 0;
+            const inc = getIncomeBreakdown();
 
-            if (autoLaw) {
-                health = Math.round(salary * 0.04);
-                pension = Math.round(salary * 0.04);
-                document.getElementById('inp-health').value = health;
-                document.getElementById('inp-pension').value = pension;
-                document.getElementById('inp-health').readOnly = true;
-                document.getElementById('inp-pension').readOnly = true;
-            } else {
-                document.getElementById('inp-health').readOnly = false;
-                document.getElementById('inp-pension').readOnly = false;
-            }
+            document.getElementById('fmt-salary').textContent = formatCOP(inc.salary);
+            document.getElementById('fmt-transport').textContent = formatCOP(inc.transport);
+            document.getElementById('fmt-extras').textContent = formatCOP(inc.extras);
 
-            appState.income.salary = salary;
-            appState.income.transport = transport;
-            appState.income.health = health;
-            appState.income.pension = pension;
-            appState.income.autoLaw = autoLaw;
+            document.getElementById('display-health-deduction').textContent = `-${formatCOP(inc.healthDeduction)}`;
+            document.getElementById('display-pension-deduction').textContent = `-${formatCOP(inc.pensionDeduction)}`;
+            document.getElementById('display-total-deductions-inline').textContent = `-${formatCOP(inc.totalDeductions)}`;
+
+            document.getElementById('summary-gross-income').textContent = formatCOP(inc.gross);
+            document.getElementById('summary-total-deductions').textContent = `-${formatCOP(inc.totalDeductions)}`;
+            document.getElementById('summary-net-label').textContent = `Depósito Neto el Día ${inc.payday}`;
+            document.getElementById('display-net-income').textContent = formatCOP(inc.net);
+
+            document.getElementById('header-payday-badge').innerHTML = `<i class="fa-solid fa-calendar-check"></i><span>Corte Día ${inc.payday}</span>`;
+            document.getElementById('expenses-payday-hint').textContent = `Obligaciones sincronizadas para cubrir con tu pago del día ${inc.payday}.`;
 
             saveState();
-            renderExtraIncomes();
             updateDashboard();
         }
 
         function resetIncomeTo2026() {
-            document.getElementById('inp-salary').value = 1750905;
-            document.getElementById('inp-transport').value = 249095;
-            document.getElementById('chk-auto-law').checked = true;
-            appState.income.extras = [];
-            calculateIncome();
-            showToast('Ingresos configurados al SMLMV Colombia 2026');
-        }
-
-        function addExtraIncome(e) {
-            e.preventDefault();
-            const nameInput = document.getElementById('extra-inc-name');
-            const amountInput = document.getElementById('extra-inc-amount');
-            const name = nameInput.value.trim();
-            const amount = parseFloat(amountInput.value) || 0;
-
-            if (!name || amount <= 0) return;
-
-            appState.income.extras.push({
-                id: 'ext-' + Date.now(),
-                name,
-                amount
-            });
-
-            nameInput.value = '';
-            amountInput.value = '';
-            saveState();
-            renderExtraIncomes();
-            updateDashboard();
-            showToast('Ingreso extra agregado');
-        }
-
-        function removeExtraIncome(id) {
-            appState.income.extras = appState.income.extras.filter(item => item.id !== id);
-            saveState();
-            renderExtraIncomes();
-            updateDashboard();
-            showToast('Ingreso extra eliminado', 'info');
-        }
-
-        function renderExtraIncomes() {
-            const container = document.getElementById('extra-incomes-list');
-            const extras = appState.income.extras || [];
-
-            if (extras.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-400 italic">No hay ingresos adicionales registrados este mes.</p>`;
-                return;
-            }
-
-            container.innerHTML = extras.map(item => `
-                <div class="flex items-center justify-between bg-emerald-50/70 border border-emerald-200 px-3.5 py-2 rounded-xl text-xs">
-                    <span class="font-semibold text-slate-800">${item.name}</span>
-                    <div class="flex items-center gap-3">
-                        <span class="font-bold text-emerald-700">+${formatCOP(item.amount)}</span>
-                        <button type="button" onclick="removeExtraIncome('${item.id}')" class="text-slate-400 hover:text-rose-600 cursor-pointer" title="Quitar">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function getExtrasTotal() {
-            return (appState.income.extras || []).reduce((sum, item) => sum + item.amount, 0);
-        }
-
-        function getNetIncome() {
-            const extrasTotal = getExtrasTotal();
-            return (appState.income.salary + appState.income.transport + extrasTotal) - (appState.income.health + appState.income.pension);
-        }
-
-        function getTotalExpenses() {
-            return appState.expenses.reduce((sum, item) => sum + item.amount, 0);
-        }
-
-        // =========================================================
-        // LÓGICA DE DESLIZADORES INTERACTIVOS DE FLUJO LIBRE
-        // =========================================================
-        function handleSliderChange(changedKey) {
-            let s = parseFloat(document.getElementById('slider-savings').value);
-            let l = parseFloat(document.getElementById('slider-leisure').value);
-            let e = parseFloat(document.getElementById('slider-emergency').value);
-
-            // Re-equilibrar automáticamente los otros dos deslizadores para sumar siempre 100%
-            if (changedKey === 'savings') {
-                const remaining = 100 - s;
-                const otherSum = l + e;
-                if (otherSum === 0) {
-                    l = remaining / 2;
-                    e = remaining / 2;
-                } else {
-                    l = (l / otherSum) * remaining;
-                    e = (e / otherSum) * remaining;
-                }
-            } else if (changedKey === 'leisure') {
-                const remaining = 100 - l;
-                const otherSum = s + e;
-                if (otherSum === 0) {
-                    s = remaining / 2;
-                    e = remaining / 2;
-                } else {
-                    s = (s / otherSum) * remaining;
-                    e = (e / otherSum) * remaining;
-                }
-            } else if (changedKey === 'emergency') {
-                const remaining = 100 - e;
-                const otherSum = s + l;
-                if (otherSum === 0) {
-                    s = remaining / 2;
-                    l = remaining / 2;
-                } else {
-                    s = (s / otherSum) * remaining;
-                    l = (l / otherSum) * remaining;
-                }
-            }
-
-            appState.allocation = {
-                savingsPct: s,
-                leisurePct: l,
-                emergencyPct: e
+            appState.income = {
+                salary: 1750905,
+                transport: 249095,
+                extras: 0,
+                payday: 20,
+                healthDeductionEnabled: true,
+                pensionDeductionEnabled: true
             };
+            document.getElementById('inp-salary').value = appState.income.salary;
+            document.getElementById('inp-transport').value = appState.income.transport;
+            document.getElementById('inp-extras').value = appState.income.extras;
+            document.getElementById('inp-payday').value = appState.income.payday;
+            document.getElementById('chk-health').checked = true;
+            document.getElementById('chk-pension').checked = true;
 
+            calculateIncome();
+            showToast('Valores legales de Colombia 2026 restaurados');
+        }
+
+        // =========================================================
+        // ACTUALIZACIÓN DEL DASHBOARD Y SIMULADOR DE FLUJO LIBRE
+        // =========================================================
+        function updateDashboard() {
+            const inc = getIncomeBreakdown();
+            const netIncome = inc.net;
+            const totalExpenses = getTotalExpenses();
+            const freeCash = netIncome - totalExpenses;
+            const positiveFreeCash = Math.max(0, freeCash);
+
+            // Configurar límites de los deslizadores según el flujo libre disponible
+            const sliderSavings = document.getElementById('slider-savings');
+            const sliderLeisure = document.getElementById('slider-leisure');
+            const sliderEmergency = document.getElementById('slider-emergency');
+
+            sliderSavings.max = positiveFreeCash;
+            sliderLeisure.max = positiveFreeCash;
+            sliderEmergency.max = positiveFreeCash;
+
+            // Ajustar valores si superan el flujo libre actual
+            let savings = Math.min(positiveFreeCash, Math.max(0, Number(appState.allocation.savings) || 0));
+            let leisure = Math.min(positiveFreeCash - savings, Math.max(0, Number(appState.allocation.leisure) || 0));
+            let emergency = Math.max(0, positiveFreeCash - savings - leisure);
+
+            appState.allocation.savings = savings;
+            appState.allocation.leisure = leisure;
+            appState.allocation.emergency = emergency;
+
+            sliderSavings.value = savings;
+            sliderLeisure.value = leisure;
+            sliderEmergency.value = emergency;
+
+            // KPIs superiores
+            document.getElementById('dash-net-income').textContent = formatCOP(netIncome);
+            document.getElementById('dash-payday-sub').innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> Depósito día ${inc.payday}`;
+
+            document.getElementById('dash-total-expenses').textContent = formatCOP(totalExpenses);
+            const expenseRatio = netIncome > 0 ? ((totalExpenses / netIncome) * 100).toFixed(1) : '0.0';
+            document.getElementById('dash-expense-ratio').textContent = `${expenseRatio}% del ingreso neto`;
+
+            document.getElementById('dash-free-cash').textContent = formatCOP(freeCash);
+            const freeRatio = netIncome > 0 ? ((positiveFreeCash / netIncome) * 100).toFixed(1) : '0.0';
+            document.getElementById('dash-free-ratio').textContent = freeCash >= 0 ? `${freeRatio}% disponible` : 'Déficit mensual';
+
+            document.getElementById('dash-suggested-saving').textContent = formatCOP(savings);
+            document.getElementById('dash-annual-saving').textContent = `${formatCOP(savings * 12)}/año`;
+
+            // Barra de distribución del ingreso neto
+            document.getElementById('total-net-badge').textContent = `100% = ${formatCOP(netIncome)}`;
+            const denom = Math.max(netIncome, totalExpenses + positiveFreeCash, 1);
+            const expShare = (totalExpenses / denom) * 100;
+            const savShare = (savings / denom) * 100;
+            const leiShare = (leisure / denom) * 100;
+            const emeShare = (emergency / denom) * 100;
+
+            document.getElementById('bar-expenses').style.width = `${expShare.toFixed(1)}%`;
+            document.getElementById('bar-savings').style.width = `${savShare.toFixed(1)}%`;
+            document.getElementById('bar-leisure').style.width = `${leiShare.toFixed(1)}%`;
+            document.getElementById('bar-emergency').style.width = `${emeShare.toFixed(1)}%`;
+
+            document.getElementById('leg-expenses').textContent = `${expShare.toFixed(1)}%`;
+            document.getElementById('leg-savings').textContent = `${savShare.toFixed(1)}%`;
+            document.getElementById('leg-leisure').textContent = `${leiShare.toFixed(1)}%`;
+            document.getElementById('leg-emergency').textContent = `${emeShare.toFixed(1)}%`;
+
+            // Etiquetas del simulador
+            document.getElementById('slider-free-cash-label').textContent = formatCOP(positiveFreeCash);
+            document.getElementById('rec-savings').textContent = formatCOP(savings);
+            document.getElementById('rec-leisure').textContent = formatCOP(leisure);
+            document.getElementById('rec-emergency').textContent = formatCOP(emergency);
+
+            document.getElementById('annual-savings-hint').textContent = `${formatCOP(savings * 12)}/año`;
+            document.getElementById('weekly-leisure-hint').textContent = `${formatCOP(Math.round(leisure / 4))}/semana`;
+
+            const pctSav = positiveFreeCash > 0 ? ((savings / positiveFreeCash) * 100).toFixed(1) : '0.0';
+            const pctLei = positiveFreeCash > 0 ? ((leisure / positiveFreeCash) * 100).toFixed(1) : '0.0';
+            const pctEme = positiveFreeCash > 0 ? ((emergency / positiveFreeCash) * 100).toFixed(1) : '0.0';
+
+            document.getElementById('pct-savings').textContent = `${pctSav}% del flujo libre`;
+            document.getElementById('pct-leisure').textContent = `${pctLei}% del flujo libre`;
+            document.getElementById('pct-emergency').textContent = `${pctEme}% del flujo libre`;
+
+            // Banner de estado del simulador
+            const banner = document.getElementById('allocation-status-banner');
+            if (freeCash < 0) {
+                banner.className = 'mb-4 p-3 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 bg-rose-500/20 border border-rose-500/40 text-rose-200';
+                banner.innerHTML = `<span>⚠️ Tus egresos superan tu ingreso neto por ${formatCOP(Math.abs(freeCash))}</span>`;
+            } else {
+                banner.className = 'mb-4 p-3 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300';
+                banner.innerHTML = `<span>✅ 100% del flujo libre asignado (${formatCOP(positiveFreeCash)})</span>`;
+            }
+
+            // Actualizar subtítulo en Asesor de IA
+            const aiSubtitle = document.getElementById('ai-live-summary-subtitle');
+            if (aiSubtitle) {
+                aiSubtitle.textContent = `Analizamos tu ingreso neto real (${formatCOP(netIncome)} COP), tus gastos fijos (${formatCOP(totalExpenses)} COP) y tu meta de ahorro, ocio y urgencias.`;
+            }
+
+            // Pie de desglose de categorías
+            document.getElementById('cat-footer-reminder').innerHTML = `<i class="fa-solid fa-calendar-check text-emerald-600 mr-1.5"></i> Paga tus obligaciones entre el día ${inc.payday} y el ${Math.min(31, inc.payday + 2)}.`;
+            document.getElementById('cat-footer-total').textContent = formatCOP(totalExpenses);
+
+            updateCharts(totalExpenses, savings, leisure, emergency);
+            renderCategoryBreakdown();
+            renderExpensesList();
+        }
+
+        function handleSliderInput(changedKey) {
+            const positiveFreeCash = Math.max(0, getNetIncome() - getTotalExpenses());
+            let savings = Number(document.getElementById('slider-savings').value) || 0;
+            let leisure = Number(document.getElementById('slider-leisure').value) || 0;
+            let emergency = Number(document.getElementById('slider-emergency').value) || 0;
+
+            if (changedKey === 'savings') {
+                savings = Math.min(positiveFreeCash, Math.max(0, savings));
+                if (savings + leisure > positiveFreeCash) {
+                    leisure = Math.max(0, positiveFreeCash - savings);
+                }
+                emergency = Math.max(0, positiveFreeCash - savings - leisure);
+            } else if (changedKey === 'leisure') {
+                leisure = Math.min(positiveFreeCash, Math.max(0, leisure));
+                if (savings + leisure > positiveFreeCash) {
+                    savings = Math.max(0, positiveFreeCash - leisure);
+                }
+                emergency = Math.max(0, positiveFreeCash - savings - leisure);
+            } else if (changedKey === 'emergency') {
+                emergency = Math.min(positiveFreeCash, Math.max(0, emergency));
+                const remaining = positiveFreeCash - emergency;
+                if (savings + leisure > remaining) {
+                    leisure = Math.max(0, remaining - savings);
+                    if (savings > remaining) {
+                        savings = remaining;
+                        leisure = 0;
+                    }
+                } else {
+                    leisure = Math.max(0, remaining - savings);
+                }
+            }
+
+            appState.allocation = { savings, leisure, emergency };
             saveState();
             updateDashboard();
         }
 
         function resetSlidersToDefault() {
-            appState.allocation = { ...defaultState.allocation };
+            const positiveFreeCash = Math.max(0, getNetIncome() - getTotalExpenses());
+            if (positiveFreeCash === 401128) {
+                appState.allocation = { savings: 120000, leisure: 150000, emergency: 131128 };
+            } else {
+                const savings = Math.round(positiveFreeCash * 0.30);
+                const leisure = Math.round(positiveFreeCash * 0.37);
+                const emergency = Math.max(0, positiveFreeCash - savings - leisure);
+                appState.allocation = { savings, leisure, emergency };
+            }
             saveState();
             updateDashboard();
-            showToast('Distribución sugerida restaurada ($120k / $150k / $131k)');
+            showToast('Distribución sugerida aplicada');
         }
 
         // =========================================================
-        // ACTUALIZACIÓN GLOBAL DEL DASHBOARD
+        // GRÁFICAS INTERACTIVAS CON CHART.JS (DONA Y BARRAS)
         // =========================================================
-        function updateDashboard() {
-            const netIncome = getNetIncome();
-            const totalExpenses = getTotalExpenses();
-            const freeCash = netIncome - totalExpenses;
-            const positiveFreeCash = Math.max(0, freeCash);
+        function updateCharts(totalExpenses, suggestedSavings, suggestedLeisure, suggestedEmergency) {
+            if (typeof Chart === 'undefined') return;
 
-            // Actualizar texto en pestaña Ingresos
-            const extrasTotal = getExtrasTotal();
-            const totalLaw = appState.income.health + appState.income.pension;
-            document.getElementById('display-net-income').textContent = formatCOP(netIncome);
-            document.getElementById('income-formula-detail').textContent =
-                `${formatCOP(appState.income.salary)} (Salario) + ${formatCOP(appState.income.transport)} (Auxilio) + ${formatCOP(extrasTotal)} (Extras) - ${formatCOP(totalLaw)} (Salud y Pensión)`;
+            // 1. Gráfica de Dona: Distribución del Ingreso Neto Real
+            const doughnutCanvas = document.getElementById('chart-income-dist');
+            if (doughnutCanvas) {
+                const doughnutData = [
+                    Math.max(0, totalExpenses),
+                    Math.max(0, suggestedSavings),
+                    Math.max(0, suggestedLeisure),
+                    Math.max(0, suggestedEmergency)
+                ];
 
-            // Calcular montos según porcentajes de los deslizadores
-            const { savingsPct, leisurePct, emergencyPct } = appState.allocation;
-            const suggestedSavings = Math.round(positiveFreeCash * (savingsPct / 100));
-            const suggestedLeisure = Math.round(positiveFreeCash * (leisurePct / 100));
-            const suggestedEmergency = Math.max(0, positiveFreeCash - suggestedSavings - suggestedLeisure);
-
-            // Sincronizar posición visual de sliders
-            document.getElementById('slider-savings').value = Math.round(savingsPct);
-            document.getElementById('slider-leisure').value = Math.round(leisurePct);
-            document.getElementById('slider-emergency').value = Math.round(emergencyPct);
-
-            // Actualizar KPIs superiores
-            const expenseRatio = netIncome > 0 ? ((totalExpenses / netIncome) * 100).toFixed(1) : '0.0';
-            const freeRatio = netIncome > 0 ? ((positiveFreeCash / netIncome) * 100).toFixed(1) : '0.0';
-
-            document.getElementById('dash-net-income').textContent = formatCOP(netIncome);
-            document.getElementById('dash-total-expenses').textContent = formatCOP(totalExpenses);
-            document.getElementById('dash-expense-ratio').textContent = `${expenseRatio}% del ingreso neto`;
-            document.getElementById('dash-free-cash').textContent = formatCOP(freeCash);
-            document.getElementById('dash-free-ratio').textContent = `${freeRatio}% disponible`;
-            document.getElementById('dash-suggested-saving').textContent = formatCOP(suggestedSavings);
-            document.getElementById('dash-annual-saving').textContent = `${formatCOP(suggestedSavings * 12)} al año`;
-
-            // Actualizar valores del panel de deslizadores
-            document.getElementById('slider-free-cash-label').textContent = formatCOP(positiveFreeCash);
-            document.getElementById('rec-savings').textContent = formatCOP(suggestedSavings);
-            document.getElementById('rec-leisure').textContent = formatCOP(suggestedLeisure);
-            document.getElementById('rec-emergency').textContent = formatCOP(suggestedEmergency);
-
-            document.getElementById('pct-savings').textContent = `${savingsPct.toFixed(1)}% del flujo libre`;
-            document.getElementById('pct-leisure').textContent = `${leisurePct.toFixed(1)}% del flujo libre`;
-            document.getElementById('pct-emergency').textContent = `${emergencyPct.toFixed(1)}% del flujo libre`;
-            document.getElementById('weekly-leisure-hint').textContent = `~${formatCOP(suggestedLeisure / 4)} por semana`;
-
-            // Mostrar alerta si flujo libre < 0
-            const warningEl = document.getElementById('negative-cash-warning');
-            if (freeCash < 0) {
-                warningEl.classList.remove('hidden');
-            } else {
-                warningEl.classList.add('hidden');
+                if (incomeDoughnutChart) {
+                    incomeDoughnutChart.data.datasets[0].data = doughnutData;
+                    incomeDoughnutChart.update('none');
+                } else {
+                    incomeDoughnutChart = new Chart(doughnutCanvas.getContext('2d'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Egresos Fijos', 'Ahorro Mínimo', 'Ocio y Cine', 'Fondo Urgencias'],
+                            datasets: [{
+                                data: doughnutData,
+                                backgroundColor: ['#f43f5e', '#10b981', '#fbbf24', '#6366f1'],
+                                borderColor: '#ffffff',
+                                borderWidth: 3,
+                                hoverOffset: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '62%',
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        boxWidth: 12,
+                                        padding: 14,
+                                        font: { family: 'Inter', size: 11, weight: '600' },
+                                        color: '#334155'
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(ctx) {
+                                            return ` ${ctx.label}: ${formatCOP(ctx.raw)}`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
             }
 
-            // Actualizar gráfico apilado de distribución total
-            document.getElementById('total-net-badge').textContent = `100% = ${formatCOP(netIncome)}`;
-            if (netIncome > 0) {
-                const expShare = Math.min(100, (totalExpenses / netIncome) * 100);
-                const savShare = Math.max(0, (suggestedSavings / netIncome) * 100);
-                const leiShare = Math.max(0, (suggestedLeisure / netIncome) * 100);
-                const emeShare = Math.max(0, (suggestedEmergency / netIncome) * 100);
+            // 2. Gráfica de Barras: Egresos por Categoría
+            const barCanvas = document.getElementById('chart-expenses-cat');
+            if (barCanvas) {
+                const categoryPalette = {
+                    'Vivienda': '#3b82f6',
+                    'Alimentación': '#10b981',
+                    'Deudas / Tarjetas': '#f43f5e',
+                    'Servicios': '#f59e0b',
+                    'Seguros / Salud': '#a855f7',
+                    'Transporte': '#06b6d4',
+                    'Otros': '#64748b'
+                };
 
-                document.getElementById('bar-expenses').style.width = `${expShare}%`;
-                document.getElementById('bar-savings').style.width = `${savShare}%`;
-                document.getElementById('bar-leisure').style.width = `${leiShare}%`;
-                document.getElementById('bar-emergency').style.width = `${emeShare}%`;
+                const grouped = {};
+                appState.expenses.forEach(exp => {
+                    grouped[exp.category] = (grouped[exp.category] || 0) + (Number(exp.amount) || 0);
+                });
 
-                document.getElementById('leg-expenses').textContent = `${expShare.toFixed(1)}%`;
-                document.getElementById('leg-savings').textContent = `${savShare.toFixed(1)}%`;
-                document.getElementById('leg-leisure').textContent = `${leiShare.toFixed(1)}%`;
-                document.getElementById('leg-emergency').textContent = `${emeShare.toFixed(1)}%`;
+                const sortedEntries = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
+                const labels = sortedEntries.length ? sortedEntries.map(e => e[0]) : ['Sin egresos'];
+                const values = sortedEntries.length ? sortedEntries.map(e => e[1]) : [0];
+                const colors = sortedEntries.length
+                    ? sortedEntries.map(e => categoryPalette[e[0]] || '#64748b')
+                    : ['#cbd5e1'];
+
+                if (expensesBarChart) {
+                    expensesBarChart.data.labels = labels;
+                    expensesBarChart.data.datasets[0].data = values;
+                    expensesBarChart.data.datasets[0].backgroundColor = colors;
+                    expensesBarChart.update('none');
+                } else {
+                    expensesBarChart = new Chart(barCanvas.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Monto Mensual (COP)',
+                                data: values,
+                                backgroundColor: colors,
+                                borderRadius: 8,
+                                maxBarThickness: 42
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(ctx) {
+                                            return ` ${formatCOP(ctx.raw)}`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: { color: '#f1f5f9' },
+                                    ticks: {
+                                        font: { family: 'Inter', size: 10 },
+                                        color: '#64748b',
+                                        callback: function(value) {
+                                            return '$' + (value / 1000).toLocaleString('es-CO') + 'k';
+                                        }
+                                    }
+                                },
+                                x: {
+                                    grid: { display: false },
+                                    ticks: {
+                                        font: { family: 'Inter', size: 10, weight: '600' },
+                                        color: '#334155'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
             }
+        }
 
-            renderCategoryBreakdown();
-            renderExpensesList();
+        // Captura un canvas sobre fondo blanco sólido para insertarlo nítidamente en el PDF
+        function getCanvasWhiteBackgroundDataURL(canvasId) {
+            const sourceCanvas = document.getElementById(canvasId);
+            if (!sourceCanvas) return null;
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = sourceCanvas.width;
+            exportCanvas.height = sourceCanvas.height;
+            const ctx = exportCanvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+            ctx.drawImage(sourceCanvas, 0, 0);
+            return exportCanvas.toDataURL('image/png', 1.0);
         }
 
         // =========================================================
-        // DESGLOSE POR CATEGORÍA Y LISTADO DE EGRESOS
+        // GENERADOR DE PDF SEGURO Y LOCAL (jsPDF - 100% EN EL CLIENTE)
         // =========================================================
-        const categoryStyles = {
-            'Vivienda': { bar: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 border-blue-200', icon: 'fa-house' },
-            'Alimentación': { bar: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: 'fa-basket-shopping' },
-            'Deudas/Tarjetas': { bar: 'bg-rose-500', badge: 'bg-rose-50 text-rose-700 border-rose-200', icon: 'fa-credit-card' },
-            'Servicios': { bar: 'bg-amber-500', badge: 'bg-amber-50 text-amber-700 border-amber-200', icon: 'fa-wifi' },
-            'Seguros': { bar: 'bg-purple-500', badge: 'bg-purple-50 text-purple-700 border-purple-200', icon: 'fa-shield-heart' },
-            'Otros': { bar: 'bg-slate-500', badge: 'bg-slate-100 text-slate-700 border-slate-200', icon: 'fa-receipt' }
+        function generateSecurePDF() {
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                showToast('Cargando librería PDF, inténtalo en un segundo...', 'info');
+                return;
+            }
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+                const inc = getIncomeBreakdown();
+                const netIncome = inc.net;
+                const totalExpenses = getTotalExpenses();
+                const freeCash = netIncome - totalExpenses;
+                const positiveFreeCash = Math.max(0, freeCash);
+
+                const suggestedSavings = Number(appState.allocation.savings) || 0;
+                const suggestedLeisure = Number(appState.allocation.leisure) || 0;
+                const suggestedEmergency = Number(appState.allocation.emergency) || 0;
+
+                const expenseRatio = netIncome > 0 ? ((totalExpenses / netIncome) * 100).toFixed(1) : '0.0';
+                const freeRatio = netIncome > 0 ? ((positiveFreeCash / netIncome) * 100).toFixed(1) : '0.0';
+
+                const fechaActual = new Date().toLocaleDateString('es-CO', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                // 1. ENCABEZADO CORPORATIVO AZUL MARINO (#0f172a)
+                doc.setFillColor(15, 23, 42);
+                doc.rect(0, 0, 210, 35, 'F');
+
+                // Franja inferior verde esmeralda (#10b981)
+                doc.setFillColor(16, 185, 129);
+                doc.rect(0, 35, 210, 2, 'F');
+
+                doc.setTextColor(255, 255, 255);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(15);
+                doc.text('Finanzas Smart COP - Resumen Financiero Personal 2026', 14, 14);
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(9.5);
+                doc.setTextColor(203, 213, 225);
+                doc.text(`Ciclo de Pago: Corte Dia ${inc.payday}   |   Fecha de emision: ${fechaActual}`, 14, 22);
+
+                // Sello de privacidad local
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(8.5);
+                doc.setTextColor(52, 211, 153);
+                doc.text('Generado localmente en tu dispositivo - Datos 100% privados (Sin servidores externos)', 14, 29.5);
+
+                // 2. BLOQUE RESUMEN: INGRESOS / DEDUCCIONES DE LEY Y DISTRIBUCIÓN DEL FLUJO LIBRE
+                let yPos = 44;
+
+                // Tarjeta Izquierda: Ingresos y Deducciones de Ley
+                doc.setFillColor(248, 250, 252);
+                doc.setDrawColor(226, 232, 240);
+                doc.roundedRect(14, yPos, 88, 52, 3, 3, 'FD');
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(10);
+                doc.setTextColor(15, 23, 42);
+                doc.text('Ingresos y Deducciones de Ley', 18, yPos + 7);
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8.5);
+
+                const incomeRows = [
+                    ['Salario Basico (SMLMV):', formatCOP(inc.salary)],
+                    ['Auxilio de Transporte:', formatCOP(inc.transport)],
+                    ['Ingresos Extra:', formatCOP(inc.extras)],
+                    ['Deduccion Salud (4%):', `-${formatCOP(inc.healthDeduction)}`],
+                    ['Deduccion Pension (4%):', `-${formatCOP(inc.pensionDeduction)}`]
+                ];
+
+                let rowY = yPos + 14;
+                incomeRows.forEach(([label, val]) => {
+                    doc.setTextColor(71, 85, 105);
+                    doc.text(label, 18, rowY);
+                    doc.setTextColor(15, 23, 42);
+                    doc.text(val, 98, rowY, { align: 'right' });
+                    rowY += 5.5;
+                });
+
+                // Línea total Ingreso Neto Real
+                doc.setDrawColor(16, 185, 129);
+                doc.line(18, rowY - 1.5, 98, rowY - 1.5);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9);
+                doc.setTextColor(5, 150, 105);
+                doc.text(`Ingreso Neto Real (Dia ${inc.payday}):`, 18, rowY + 3.5);
+                doc.text(formatCOP(netIncome), 98, rowY + 3.5, { align: 'right' });
+
+                // Tarjeta Derecha: Flujo Libre y Asignación
+                doc.setFillColor(248, 250, 252);
+                doc.setDrawColor(226, 232, 240);
+                doc.roundedRect(108, yPos, 88, 52, 3, 3, 'FD');
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(10);
+                doc.setTextColor(15, 23, 42);
+                doc.text('Balance y Asignacion del Flujo Libre', 112, yPos + 7);
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8.5);
+                const flowRows = [
+                    ['Total Egresos Fijos:', `${formatCOP(totalExpenses)} (${expenseRatio}%)`],
+                    ['Flujo Libre Disponible:', `${formatCOP(freeCash)} (${freeRatio}%)`],
+                    ['Ahorro Minimo Fijo:', formatCOP(suggestedSavings)],
+                    ['Presupuesto Ocio / Cine:', formatCOP(suggestedLeisure)],
+                    ['Colchon de Urgencias:', formatCOP(suggestedEmergency)]
+                ];
+
+                rowY = yPos + 14;
+                flowRows.forEach(([label, val]) => {
+                    doc.setTextColor(71, 85, 105);
+                    doc.text(label, 112, rowY);
+                    doc.setTextColor(15, 23, 42);
+                    doc.text(val, 192, rowY, { align: 'right' });
+                    rowY += 5.5;
+                });
+
+                // Proyección Anual de Ahorro
+                doc.setDrawColor(99, 102, 241);
+                doc.line(112, rowY - 1.5, 192, rowY - 1.5);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9);
+                doc.setTextColor(79, 70, 229);
+                doc.text('Ahorro Proyectado (12 meses):', 112, rowY + 3.5);
+                doc.text(formatCOP(suggestedSavings * 12), 192, rowY + 3.5, { align: 'right' });
+
+                // 3. SECCIÓN DE GRÁFICAS EN ALTA RESOLUCIÓN
+                yPos = 102;
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(10.5);
+                doc.setTextColor(15, 23, 42);
+                doc.text('Analisis Grafico del Presupuesto', 14, yPos);
+
+                yPos += 3;
+                // Marco Gráfica Izquierda (Dona)
+                doc.setFillColor(255, 255, 255);
+                doc.setDrawColor(226, 232, 240);
+                doc.roundedRect(14, yPos, 88, 62, 3, 3, 'FD');
+                doc.setFontSize(8.5);
+                doc.setTextColor(71, 85, 105);
+                doc.text('Distribucion del Ingreso Neto Real', 18, yPos + 5.5);
+
+                const doughnutImg = getCanvasWhiteBackgroundDataURL('chart-income-dist');
+                if (doughnutImg) {
+                    doc.addImage(doughnutImg, 'PNG', 17, yPos + 8, 82, 51);
+                }
+
+                // Marco Gráfica Derecha (Barras)
+                doc.setFillColor(255, 255, 255);
+                doc.setDrawColor(226, 232, 240);
+                doc.roundedRect(108, yPos, 88, 62, 3, 3, 'FD');
+                doc.text('Egresos por Categoria (COP)', 112, yPos + 5.5);
+
+                const barImg = getCanvasWhiteBackgroundDataURL('chart-expenses-cat');
+                if (barImg) {
+                    doc.addImage(barImg, 'PNG', 111, yPos + 8, 82, 51);
+                }
+
+                // 4. TABLA DETALLADA DE EGRESOS REGISTRADOS
+                yPos = 173;
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(10.5);
+                doc.setTextColor(15, 23, 42);
+                doc.text('Detalle de Egresos Mensuales Registrados', 14, yPos);
+
+                yPos += 4;
+                // Cabecera de tabla
+                doc.setFillColor(15, 23, 42);
+                doc.rect(14, yPos, 182, 8, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(8.5);
+                doc.text('Concepto / Gasto', 17, yPos + 5.3);
+                doc.text('Categoria', 92, yPos + 5.3);
+                doc.text('Monto Mensual', 158, yPos + 5.3, { align: 'right' });
+                doc.text('% Ingreso', 192, yPos + 5.3, { align: 'right' });
+
+                yPos += 8;
+                doc.setFont('helvetica', 'normal');
+
+                appState.expenses.forEach((exp, index) => {
+                    if (yPos > 272) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+
+                    if (index % 2 === 0) {
+                        doc.setFillColor(248, 250, 252);
+                        doc.rect(14, yPos, 182, 7.5, 'F');
+                    }
+
+                    doc.setDrawColor(226, 232, 240);
+                    doc.line(14, yPos + 7.5, 196, yPos + 7.5);
+
+                    const pctOfNet = netIncome > 0 ? ((exp.amount / netIncome) * 100).toFixed(1) : '0.0';
+                    doc.setTextColor(15, 23, 42);
+                    doc.text(String(exp.name).substring(0, 38), 17, yPos + 5);
+                    doc.setTextColor(71, 85, 105);
+                    doc.text(String(exp.category), 92, yPos + 5);
+                    doc.setTextColor(15, 23, 42);
+                    doc.text(formatCOP(exp.amount), 158, yPos + 5, { align: 'right' });
+                    doc.text(`${pctOfNet}%`, 192, yPos + 5, { align: 'right' });
+
+                    yPos += 7.5;
+                });
+
+                // Fila Total de Egresos
+                if (yPos > 272) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                doc.setFillColor(236, 253, 245);
+                doc.rect(14, yPos, 182, 8.5, 'F');
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(6, 95, 70);
+                doc.text('TOTAL EGRESOS FIJOS MENSUALES', 17, yPos + 5.6);
+                doc.text(`${appState.expenses.length} items`, 92, yPos + 5.6);
+                doc.text(formatCOP(totalExpenses), 158, yPos + 5.6, { align: 'right' });
+                doc.text(`${expenseRatio}%`, 192, yPos + 5.6, { align: 'right' });
+
+                // Pie de página con sello de privacidad
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8);
+                doc.setTextColor(100, 116, 139);
+                doc.text(
+                    'Finanzas Smart COP - Documento generado localmente en tu navegador (100% privado, sin servidores externos).',
+                    105,
+                    289,
+                    { align: 'center' }
+                );
+
+                doc.save('Resumen_Financiero_Smart_COP.pdf');
+                showToast('PDF seguro generado y descargado localmente');
+            } catch (error) {
+                showToast('No se pudo generar el PDF en este momento', 'info');
+            }
+        }
+
+        // =========================================================
+        // DESGLOSE POR CATEGORÍA Y GESTIÓN DE EGRESOS
+        // =========================================================
+        const CATEGORY_META = {
+            'Vivienda': { icon: 'fa-house', badge: 'bg-blue-50 text-blue-700 border-blue-200', bar: 'bg-blue-500' },
+            'Alimentación': { icon: 'fa-basket-shopping', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', bar: 'bg-emerald-500' },
+            'Deudas / Tarjetas': { icon: 'fa-credit-card', badge: 'bg-rose-50 text-rose-700 border-rose-200', bar: 'bg-rose-500' },
+            'Servicios': { icon: 'fa-wifi', badge: 'bg-amber-50 text-amber-700 border-amber-200', bar: 'bg-amber-500' },
+            'Seguros / Salud': { icon: 'fa-shield-heart', badge: 'bg-purple-50 text-purple-700 border-purple-200', bar: 'bg-purple-500' },
+            'Transporte': { icon: 'fa-bus', badge: 'bg-cyan-50 text-cyan-700 border-cyan-200', bar: 'bg-cyan-500' },
+            'Otros': { icon: 'fa-receipt', badge: 'bg-slate-100 text-slate-700 border-slate-200', bar: 'bg-slate-500' }
         };
 
         function renderCategoryBreakdown() {
             const container = document.getElementById('category-breakdown-list');
+            const subtotalsContainer = document.getElementById('category-subtotals-list');
             const netIncome = getNetIncome();
-            const totalExpenses = getTotalExpenses();
-            document.getElementById('cat-footer-total').textContent = formatCOP(totalExpenses);
 
             const grouped = {};
             appState.expenses.forEach(exp => {
-                grouped[exp.category] = (grouped[exp.category] || 0) + exp.amount;
+                grouped[exp.category] = (grouped[exp.category] || 0) + (Number(exp.amount) || 0);
             });
 
             const entries = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
 
-            if (entries.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">No hay egresos registrados todavía.</p>`;
+            if (!entries.length) {
+                container.innerHTML = `<p class="text-xs text-slate-400 py-6 text-center">Aún no tienes egresos registrados. Agrega tus gastos en la pestaña Egresos.</p>`;
+                if (subtotalsContainer) subtotalsContainer.innerHTML = `<p class="text-slate-400">Sin categorías activas.</p>`;
                 return;
             }
 
             container.innerHTML = entries.map(([cat, amount]) => {
-                const pctOfIncome = netIncome > 0 ? ((amount / netIncome) * 100).toFixed(1) : '0.0';
-                const style = categoryStyles[cat] || categoryStyles['Otros'];
-
+                const meta = CATEGORY_META[cat] || CATEGORY_META['Otros'];
+                const pct = netIncome > 0 ? ((amount / netIncome) * 100).toFixed(1) : '0.0';
+                const barWidth = Math.min(100, Number(pct));
                 return `
-                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
-                        <div class="flex justify-between items-center text-sm mb-1.5">
+                    <div>
+                        <div class="flex items-center justify-between text-xs mb-1.5">
                             <span class="font-semibold text-slate-800 flex items-center gap-2">
-                                <i class="fa-solid ${style.icon} text-slate-500 text-xs"></i>
-                                ${cat}
+                                <span class="w-6 h-6 rounded-lg inline-flex items-center justify-center border ${meta.badge}">
+                                    <i class="fa-solid ${meta.icon} text-[11px]"></i>
+                                </span>
+                                <span>${cat}</span>
                             </span>
-                            <span class="font-bold text-slate-900">
-                                ${formatCOP(amount)} <span class="text-xs font-normal text-slate-500">(${pctOfIncome}%)</span>
-                            </span>
+                            <span class="font-bold text-slate-900">${formatCOP(amount)} <span class="text-slate-400 font-normal">(${pct}%)</span></span>
                         </div>
-                        <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                            <div class="${style.bar} h-full rounded-full transition-all duration-300" style="width: ${Math.min(100, pctOfIncome)}%"></div>
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="${meta.bar} h-full rounded-full transition-all duration-300" style="width: ${barWidth}%"></div>
                         </div>
                     </div>
                 `;
             }).join('');
+
+            if (subtotalsContainer) {
+                subtotalsContainer.innerHTML = entries.map(([cat, amount]) => `
+                    <div class="flex items-center justify-between py-1 border-b border-slate-100 last:border-b-0">
+                        <span class="text-slate-600 font-medium">${cat}</span>
+                        <span class="font-bold text-slate-900">${formatCOP(amount)}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function renderExpensesList() {
+            const container = document.getElementById('expenses-list-container');
+            const totalExpenses = getTotalExpenses();
+            const netIncome = getNetIncome();
+
+            document.getElementById('expenses-count-badge').textContent = `${appState.expenses.length} ${appState.expenses.length === 1 ? 'ítem' : 'ítems'}`;
+            document.getElementById('expenses-total-badge').textContent = `Total: ${formatCOP(totalExpenses)}`;
+
+            const filtered = currentExpenseFilter === 'Todas'
+                ? appState.expenses
+                : appState.expenses.filter(exp => exp.category === currentExpenseFilter);
+
+            if (!filtered.length) {
+                container.innerHTML = `
+                    <div class="text-center py-10 text-slate-400">
+                        <i class="fa-solid fa-folder-open text-2xl mb-2"></i>
+                        <p class="text-xs font-medium">No hay egresos registrados en esta categoría.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(exp => {
+                const meta = CATEGORY_META[exp.category] || CATEGORY_META['Otros'];
+                const share = netIncome > 0 ? ((exp.amount / netIncome) * 100).toFixed(1) : '0.0';
+                return `
+                    <div class="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50/60 transition">
+                        <div class="flex items-center gap-3 min-w-[180px]">
+                            <div class="w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${meta.badge}">
+                                <i class="fa-solid ${meta.icon} text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-slate-900">${escapeHtml(exp.name)}</p>
+                                <span class="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md border mt-0.5 ${meta.badge}">${escapeHtml(exp.category)}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 ml-auto">
+                            <div class="text-right">
+                                <p class="text-sm font-extrabold text-slate-900">${formatCOP(exp.amount)}</p>
+                                <p class="text-[11px] text-slate-500">${share}% del ingreso neto</p>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="editExpense('${exp.id}')" class="p-2 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition cursor-pointer" title="Editar egreso">
+                                    <i class="fa-solid fa-pen text-xs"></i>
+                                </button>
+                                <button type="button" onclick="deleteExpense('${exp.id}')" class="p-2 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer" title="Eliminar egreso">
+                                    <i class="fa-solid fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function handleExpenseSubmit(event) {
+            event.preventDefault();
+            const id = document.getElementById('expense-id').value.trim();
+            const name = document.getElementById('expense-name').value.trim();
+            const amount = Math.round(Number(document.getElementById('expense-amount').value) || 0);
+            const category = document.getElementById('expense-category').value;
+
+            if (!name || amount <= 0) {
+                showToast('Ingresa un nombre y un monto mayor a $0', 'info');
+                return;
+            }
+
+            if (id) {
+                const idx = appState.expenses.findIndex(e => e.id === id);
+                if (idx !== -1) {
+                    appState.expenses[idx] = { id, name, amount, category };
+                    showToast('Egreso actualizado correctamente');
+                }
+            } else {
+                appState.expenses.push({
+                    id: 'exp-' + Date.now(),
+                    name,
+                    amount,
+                    category
+                });
+                showToast('Nuevo egreso agregado');
+            }
+
+            resetExpenseForm();
+            saveState();
+            updateDashboard();
+        }
+
+        function editExpense(id) {
+            const item = appState.expenses.find(e => e.id === id);
+            if (!item) return;
+
+            document.getElementById('expense-id').value = item.id;
+            document.getElementById('expense-name').value = item.name;
+            document.getElementById('expense-amount').value = item.amount;
+            document.getElementById('expense-category').value = item.category;
+
+            document.getElementById('expense-form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-600 mr-2"></i> Editando Egreso`;
+            document.getElementById('expense-submit-btn').textContent = 'Actualizar Egreso';
+            document.getElementById('expense-name').focus();
+        }
+
+        function deleteExpense(id) {
+            appState.expenses = appState.expenses.filter(e => e.id !== id);
+            if (document.getElementById('expense-id').value === id) {
+                resetExpenseForm();
+            }
+            saveState();
+            updateDashboard();
+            showToast('Egreso eliminado', 'info');
+        }
+
+        function resetExpenseForm() {
+            document.getElementById('expense-id').value = '';
+            document.getElementById('expense-name').value = '';
+            document.getElementById('expense-amount').value = '';
+            document.getElementById('expense-category').value = 'Vivienda';
+            document.getElementById('expense-form-title').innerHTML = `<i class="fa-solid fa-circle-plus text-emerald-600 mr-2"></i> Agregar Nuevo Egreso`;
+            document.getElementById('expense-submit-btn').textContent = 'Guardar Egreso';
         }
 
         function filterExpenses(category) {
@@ -1019,113 +1664,137 @@
             renderExpensesList();
         }
 
-        function renderExpensesList() {
-            const container = document.getElementById('expenses-list-container');
-            const totalExpenses = getTotalExpenses();
+        // =========================================================
+        // GESTIÓN SEGURA DE API KEY EN LOCALSTORAGE E INTEGRACIÓN GEMINI
+        // =========================================================
+        function sanitizeApiKey(rawKey) {
+            return String(rawKey || '').replace(/[\s\u200B-\u200D\uFEFF]/g, '');
+        }
 
-            document.getElementById('expenses-count-badge').textContent = `${appState.expenses.length} ítems`;
-            document.getElementById('expenses-total-badge').textContent = `Total: ${formatCOP(totalExpenses)}`;
+        function getStoredGeminiApiKey() {
+            try {
+                return sanitizeApiKey(localStorage.getItem(GEMINI_KEY_STORAGE) || '');
+            } catch (e) {
+                return '';
+            }
+        }
 
-            const filtered = currentExpenseFilter === 'Todas'
-                ? appState.expenses
-                : appState.expenses.filter(item => item.category === currentExpenseFilter);
+        function updateApiKeyUI() {
+            const dot = document.getElementById('api-key-dot');
+            const badge = document.getElementById('api-key-status-badge');
+            const input = document.getElementById('gemini-api-key-input');
+            const savedKey = getStoredGeminiApiKey();
 
-            if (filtered.length === 0) {
-                container.innerHTML = `<p class="text-sm text-slate-400 text-center py-8">No hay egresos en esta categoría.</p>`;
+            if (input) {
+                input.value = savedKey;
+            }
+
+            if (savedKey) {
+                if (dot) {
+                    dot.classList.remove('bg-amber-400');
+                    dot.classList.add('bg-emerald-400');
+                    dot.title = 'API Key personal configurada en este navegador';
+                }
+                if (badge) {
+                    badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200';
+                    badge.textContent = '✅ API Key personal activa en este navegador';
+                }
+            } else {
+                if (dot) {
+                    dot.classList.remove('bg-emerald-400');
+                    dot.classList.add('bg-amber-400');
+                    dot.title = 'Sin API Key personal (usa el entorno automático en Vista Previa)';
+                }
+                if (badge) {
+                    badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200';
+                    badge.textContent = '🔑 Opcional en Vista Previa • Requerida en GitHub Pages';
+                }
+            }
+        }
+
+        function toggleApiKeyVisibility() {
+            const input = document.getElementById('gemini-api-key-input');
+            const btn = document.getElementById('toggle-key-vis-btn');
+            if (!input || !btn) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
+            } else {
+                input.type = 'password';
+                btn.innerHTML = '<i class="fa-solid fa-eye"></i>';
+            }
+        }
+
+        function saveApiKey() {
+            const input = document.getElementById('gemini-api-key-input');
+            const keyVal = sanitizeApiKey(input ? input.value : '');
+            if (!keyVal) {
+                showToast('Pega una API Key antes de guardar (o usa Eliminar clave)', 'info');
                 return;
             }
-
-            container.innerHTML = filtered.map(exp => {
-                const style = categoryStyles[exp.category] || categoryStyles['Otros'];
-                return `
-                    <div class="bg-slate-50 hover:bg-slate-100/80 transition p-4 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
-                        <div class="flex items-center space-x-3.5">
-                            <div class="bg-white border border-slate-200 text-slate-700 p-2.5 rounded-xl shadow-2xs">
-                                <i class="fa-solid ${style.icon}"></i>
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-bold text-slate-900">${exp.name}</h4>
-                                <span class="inline-block mt-1 px-2.5 py-0.5 rounded-md text-xs font-semibold border ${style.badge}">
-                                    ${exp.category}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-3 ml-auto">
-                            <span class="text-base font-extrabold text-slate-900">${formatCOP(exp.amount)}</span>
-                            <div class="flex items-center space-x-1">
-                                <button type="button" onclick="editExpense('${exp.id}')" class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-white rounded-lg transition cursor-pointer" title="Editar gasto">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </button>
-                                <button type="button" onclick="openConfirmModal('deleteExpense', '${exp.id}')" class="p-2 text-slate-500 hover:text-rose-600 hover:bg-white rounded-lg transition cursor-pointer" title="Eliminar gasto">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function handleExpenseSubmit(e) {
-            e.preventDefault();
-            const id = document.getElementById('expense-id').value;
-            const name = document.getElementById('expense-name').value.trim();
-            const category = document.getElementById('expense-category').value;
-            const amount = parseFloat(document.getElementById('expense-amount').value);
-
-            if (!name || isNaN(amount) || amount <= 0) return;
-
-            if (id) {
-                const idx = appState.expenses.findIndex(item => item.id === id);
-                if (idx !== -1) {
-                    appState.expenses[idx] = { id, name, category, amount };
-                }
-                showToast('Egreso actualizado con éxito');
-            } else {
-                appState.expenses.push({
-                    id: 'exp-' + Date.now(),
-                    name,
-                    category,
-                    amount
-                });
-                showToast('Nuevo egreso agregado');
+            if (!keyVal.startsWith('AIza') || keyVal.length < 30) {
+                showToast('La clave debe empezar por "AIza..." y tener alrededor de 39 caracteres', 'info');
+                return;
             }
-
-            saveState();
-            resetExpenseForm();
-            updateDashboard();
+            try {
+                localStorage.setItem(GEMINI_KEY_STORAGE, keyVal);
+                updateApiKeyUI();
+                showToast('API Key guardada de forma segura en tu navegador');
+            } catch (e) {
+                showToast('No se pudo guardar la clave en el navegador', 'info');
+            }
         }
 
-        function editExpense(id) {
-            const exp = appState.expenses.find(item => item.id === id);
-            if (!exp) return;
-
-            document.getElementById('expense-id').value = exp.id;
-            document.getElementById('expense-name').value = exp.name;
-            document.getElementById('expense-category').value = exp.category;
-            document.getElementById('expense-amount').value = exp.amount;
-
-            document.getElementById('expense-form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-600 mr-2"></i> Editando Egreso`;
-            document.getElementById('expense-submit-btn').textContent = 'Actualizar Egreso';
-            switchTab('expenses');
+        function deleteApiKey() {
+            try {
+                localStorage.removeItem(GEMINI_KEY_STORAGE);
+                const input = document.getElementById('gemini-api-key-input');
+                if (input) input.value = '';
+                updateApiKeyUI();
+                showToast('API Key eliminada del navegador', 'info');
+            } catch (e) {
+                // Ignorar error
+            }
         }
 
-        function resetExpenseForm() {
-            document.getElementById('expense-form').reset();
-            document.getElementById('expense-id').value = '';
-            document.getElementById('expense-form-title').innerHTML = `<i class="fa-solid fa-circle-plus text-emerald-600 mr-2"></i> Agregar Nuevo Egreso`;
-            document.getElementById('expense-submit-btn').textContent = 'Guardar Egreso';
+        function handleCustomAiSubmit(event) {
+            event.preventDefault();
+            const input = document.getElementById('custom-ai-question');
+            const question = input ? input.value.trim() : '';
+            if (!question) {
+                showToast('Escribe tu pregunta financiera primero', 'info');
+                return;
+            }
+            askGeminiAdvisor('custom', question);
         }
 
-        // =========================================================
-        // INTEGRACIÓN CON GEMINI API (gemini-3-flash-preview)
-        // =========================================================
-        async function askGeminiAdvisor(topic = 'general') {
+        function copyAiResponse() {
+            if (!lastAiPlainText) return;
+            const textarea = document.createElement('textarea');
+            textarea.value = lastAiPlainText;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('Diagnóstico copiado al portapapeles');
+            } catch (e) {
+                showToast('No se pudo copiar el texto', 'info');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        async function askGeminiAdvisor(topic = 'general', customQuestion = '') {
             const responseArea = document.getElementById('ai-response-area');
             const btn = document.getElementById('ai-btn');
+            const copyBar = document.getElementById('ai-copy-bar');
+            const apiKey = getStoredGeminiApiKey();
 
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-lg"></i><span>Analizando...</span>`;
+            copyBar.classList.add('hidden');
+            copyBar.classList.remove('flex');
 
             responseArea.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-10 space-y-3">
@@ -1134,46 +1803,47 @@
                 </div>
             `;
 
-            const netIncome = getNetIncome();
+            const inc = getIncomeBreakdown();
             const totalExpenses = getTotalExpenses();
-            const freeCash = netIncome - totalExpenses;
-            const positiveFreeCash = Math.max(0, freeCash);
-            const savings = Math.round(positiveFreeCash * (appState.allocation.savingsPct / 100));
-            const leisure = Math.round(positiveFreeCash * (appState.allocation.leisurePct / 100));
-            const emergency = Math.max(0, positiveFreeCash - savings - leisure);
+            const freeCash = inc.net - totalExpenses;
 
             const financialContext = {
                 paisYAnio: "Colombia 2026",
-                diaDePago: "20 de cada mes",
-                salarioBasico: appState.income.salary,
-                auxilioTransporte: appState.income.transport,
-                deduccionSalud: appState.income.health,
-                deduccionPension: appState.income.pension,
-                ingresosExtras: getExtrasTotal(),
-                ingresoNetoReal: netIncome,
-                totalEgresos: totalExpenses,
+                diaDePagoMensual: `Día ${inc.payday} de cada mes`,
+                salarioBasico: inc.salary,
+                auxilioTransporte: inc.transport,
+                ingresosExtras: inc.extras,
+                deduccionSalud4Pct: inc.healthDeduction,
+                deduccionPension4Pct: inc.pensionDeduction,
+                ingresoNetoReal: inc.net,
+                totalEgresosFijos: totalExpenses,
                 egresosDetallados: appState.expenses,
                 flujoLibreDisponible: freeCash,
                 planActualFlujoLibre: {
-                    ahorroMensual: savings,
-                    presupuestoOcioYCine: leisure,
-                    colchonUrgencias: emergency
+                    ahorroMensual: appState.allocation.savings,
+                    proyeccionAhorroAnual: appState.allocation.savings * 12,
+                    presupuestoOcioYCineMensual: appState.allocation.leisure,
+                    presupuestoOcioSemanal: Math.round(appState.allocation.leisure / 4),
+                    colchonUrgencias: appState.allocation.emergency
                 }
             };
 
-            let focusInstruction = "Dame un diagnóstico completo de mi salud financiera, valida mi meta de ahorro mínimo, mi presupuesto semanal para cine/salidas, mi colchón de urgencias y dame 3 consejos prácticos para administrar mi dinero desde el día 20 que me pagan.";
+            let focusInstruction = "Dame un diagnóstico completo de mi salud financiera, evalúa mi ahorro mensual, mi presupuesto semanal para cine y salidas, mi colchón de urgencias y dame 3 recomendaciones concretas para administrar mi dinero desde el día de pago.";
             if (topic === 'dia20') {
-                focusInstruction = "Explícame paso a paso un cronograma exacto para el día 20 (día de pago) y las siguientes 4 semanas del mes para no quedarme sin dinero antes del próximo 20.";
+                focusInstruction = `Explícame paso a paso un cronograma exacto para el día ${inc.payday} (día de pago) y las siguientes 4 semanas del mes para no quedarme sin dinero antes del siguiente pago.`;
             } else if (topic === 'tarjeta') {
-                focusInstruction = "Analiza el impacto de mis deudas/tarjetas en mi presupuesto y dame una estrategia realista (incluyendo uso de primas legales en junio/diciembre) para liquidar esa deuda más rápido.";
+                focusInstruction = "Analiza el impacto de mis deudas/tarjetas de crédito en mi presupuesto y dame una estrategia realista (incluyendo uso de primas legales de junio y diciembre en Colombia) para salir de esa deuda más rápido.";
             } else if (topic === 'ahorro') {
-                focusInstruction = "Recomiéndame las mejores estrategias y vehículos seguros en Colombia (cuentas de alto rendimiento, bolsillos digitales, CDT de bajo monto) para hacer crecer mi ahorro mensual y mi colchón de urgencias.";
+                focusInstruction = "Recomiéndame las mejores opciones seguras en Colombia (cuentas remuneradas de alto rendimiento, bolsillos digitales, CDT de bajo monto) para hacer crecer mi ahorro mensual y mi colchón de urgencias.";
+            } else if (topic === 'ocio') {
+                focusInstruction = "Analiza mi presupuesto de ocio y cine semanal. Dame ideas prácticas para disfrutar salidas al cine o planes sin salirme de mi tope mensual ni afectar mi ahorro.";
+            } else if (topic === 'custom' && customQuestion) {
+                focusInstruction = customQuestion;
             }
 
             const systemPrompt = "Actúa como un asesor financiero personal experto en finanzas personales en Colombia (2026). Usa un tono cercano, claro, motivador y muy práctico. Formatea tu respuesta usando encabezados cortos con '###', listas con viñetas '*' y negritas '**' para cifras clave en pesos colombianos (COP).";
             const userQuery = `Mis datos financieros actuales:\n${JSON.stringify(financialContext, null, 2)}\n\nSolicitud: ${focusInstruction}`;
 
-            const apiKey = "";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
 
             const payload = {
@@ -1183,6 +1853,8 @@
 
             let success = false;
             let resultData = null;
+            let errorStatus = 0;
+            let googleErrorDetail = '';
             let delay = 1000;
 
             for (let attempt = 1; attempt <= 4; attempt++) {
@@ -1196,9 +1868,18 @@
                         resultData = await response.json();
                         success = true;
                         break;
+                    } else {
+                        errorStatus = response.status;
+                        try {
+                            const errJson = await response.json();
+                            googleErrorDetail = errJson?.error?.message || '';
+                        } catch (parseErr) {
+                            googleErrorDetail = '';
+                        }
+                        if (errorStatus === 400 || errorStatus === 403 || errorStatus === 404) break;
                     }
                 } catch (err) {
-                    // Reintento silencioso con backoff exponencial
+                    // Reintento con backoff exponencial
                 }
                 await new Promise(res => setTimeout(res, delay));
                 delay *= 2;
@@ -1209,7 +1890,9 @@
 
             if (success && resultData?.candidates?.[0]?.content?.parts?.[0]?.text) {
                 const rawText = resultData.candidates[0].content.parts[0].text;
-                const formattedHtml = rawText
+                lastAiPlainText = rawText;
+
+                const formattedHtml = escapeHtml(rawText)
                     .replace(/^### (.*$)/gim, '<h3 class="text-base font-bold text-emerald-400 mt-4 mb-2 flex items-center"><i class="fa-solid fa-circle-check mr-2 text-xs"></i>$1</h3>')
                     .replace(/^## (.*$)/gim, '<h3 class="text-lg font-bold text-emerald-300 mt-5 mb-2">$1</h3>')
                     .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
@@ -1217,25 +1900,91 @@
                     .replace(/^- (.*$)/gim, '<li class="ml-5 list-disc text-slate-300 my-1">$1</li>')
                     .replace(/\n\n/g, '<div class="h-2"></div>');
 
+                copyBar.classList.remove('hidden');
+                copyBar.classList.add('flex');
                 responseArea.innerHTML = `<div class="text-slate-200 text-sm leading-relaxed">${formattedHtml}</div>`;
+            } else if (!apiKey) {
+                responseArea.innerHTML = `
+                    <div class="text-center py-6 text-amber-300 space-y-2">
+                        <i class="fa-solid fa-key text-2xl text-amber-400"></i>
+                        <p class="font-semibold">Configura tu API Key gratuita de Google AI Studio arriba.</p>
+                        <p class="text-xs text-slate-400 max-w-md mx-auto">
+                            Al abrir la app desde GitHub Pages necesitas pegar tu propia API Key (empieza por <code class="text-slate-200">AIza...</code>) y presionar <strong>Guardar clave</strong>.
+                        </p>
+                    </div>
+                `;
             } else {
                 responseArea.innerHTML = `
-                    <div class="text-center py-6 text-rose-300">
-                        <i class="fa-solid fa-triangle-exclamation text-2xl mb-2 text-rose-400"></i>
-                        <p class="font-semibold">No se pudo obtener respuesta del Asesor IA en este momento.</p>
-                        <p class="text-xs text-slate-400 mt-1">Verifica tu conexión e inténtalo de nuevo en unos segundos.</p>
+                    <div class="text-center py-6 text-rose-300 space-y-2">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl text-rose-400"></i>
+                        <p class="font-semibold">Google rechazó la solicitud (${errorStatus || 'Error de red'}).</p>
+                        <p class="text-xs text-slate-300 max-w-lg mx-auto">
+                            ${googleErrorDetail ? `Detalle: <span class="text-rose-200 font-mono">${escapeHtml(googleErrorDetail)}</span>` : 'Verifica tu conexión a internet o revisa tu clave.'}
+                        </p>
+                        <p class="text-[11px] text-slate-400 max-w-md mx-auto pt-1">
+                            Si estás en la <strong>Vista Previa</strong>, haz clic en <strong>Eliminar clave</strong> arriba para usar la conexión automática. Si estás en <strong>GitHub Pages</strong>, asegúrate de crear una clave sin restricciones en Google AI Studio.
+                        </p>
                     </div>
                 `;
             }
         }
 
-        // Inicialización de la aplicación al cargar la página
+        // =========================================================
+        // MODAL DE CONFIRMACIÓN Y TOASTS
+        // =========================================================
+        function confirmResetAll() {
+            const modal = document.getElementById('confirm-modal');
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            confirmBtn.onclick = function() {
+                appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+                saveState();
+                initApp();
+                closeConfirmModal();
+                showToast('Todos los datos fueron restaurados a los valores base 2026');
+            };
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast-notification');
+            const icon = document.getElementById('toast-icon');
+            const msg = document.getElementById('toast-message');
+            if (!toast || !msg) return;
+
+            msg.textContent = message;
+            icon.className = type === 'success'
+                ? 'fa-solid fa-circle-check text-emerald-400'
+                : 'fa-solid fa-circle-info text-sky-400';
+
+            toast.classList.remove('hidden');
+            toast.classList.add('flex');
+
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.add('hidden');
+                toast.classList.remove('flex');
+            }, 3000);
+        }
+
+        // =========================================================
+        // INICIALIZACIÓN DE LA APLICACIÓN AL CARGAR LA PÁGINA
+        // =========================================================
         function initApp() {
             document.getElementById('inp-salary').value = appState.income.salary;
             document.getElementById('inp-transport').value = appState.income.transport;
-            document.getElementById('inp-health').value = appState.income.health;
-            document.getElementById('inp-pension').value = appState.income.pension;
-            document.getElementById('chk-auto-law').checked = appState.income.autoLaw !== false;
+            document.getElementById('inp-extras').value = appState.income.extras || 0;
+            document.getElementById('inp-payday').value = appState.income.payday || 20;
+            document.getElementById('chk-health').checked = appState.income.healthDeductionEnabled !== false;
+            document.getElementById('chk-pension').checked = appState.income.pensionDeductionEnabled !== false;
+
+            updateApiKeyUI();
             calculateIncome();
         }
 
