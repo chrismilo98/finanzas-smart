@@ -80,8 +80,8 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2.5">
-                <button type="button" onclick="openAuthModal()" id="header-auth-btn" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/30 px-3.5 py-2 rounded-xl text-xs font-semibold transition shadow-sm cursor-pointer">
-                    <i class="fa-solid fa-user-lock"></i>
+                <button type="button" onclick="openAuthModal()" id="header-auth-btn" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/40 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition shadow-md cursor-pointer">
+                    <i class="fa-solid fa-right-to-bracket"></i>
                     <span id="header-auth-label">Iniciar Sesión</span>
                     <span id="cloud-sync-dot" class="w-2 h-2 rounded-full bg-amber-300" title="Estado de sincronización"></span>
                 </button>
@@ -117,6 +117,23 @@
                 <span>Egresos</span>
             </button>
         </nav>
+
+        <!-- BANNER VISIBLE DE INICIO DE SESIÓN Y SINCRONIZACIÓN -->
+        <div id="auth-promo-banner" class="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-start sm:items-center gap-3">
+                <div id="auth-banner-icon-box" class="bg-indigo-600 text-white p-2.5 rounded-xl shrink-0">
+                    <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
+                </div>
+                <div>
+                    <p id="auth-banner-title" class="text-xs sm:text-sm font-bold text-indigo-950">Inicia sesión para guardar y sincronizar entre tu PC y tu celular</p>
+                    <p id="auth-banner-subtitle" class="text-xs text-indigo-700 mt-0.5">Crea tu cuenta con correo y contraseña para mantener tus meses guardados en cualquier dispositivo.</p>
+                </div>
+            </div>
+            <button type="button" onclick="openAuthModal()" id="auth-banner-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-sm inline-flex items-center justify-center gap-2 shrink-0 cursor-pointer">
+                <i class="fa-solid fa-user-check"></i>
+                <span>Iniciar Sesión / Crear Cuenta</span>
+            </button>
+        </div>
 
         <!-- ========================================================= -->
         <!-- PESTAÑA 1: DASHBOARD & RESUMEN                            -->
@@ -743,142 +760,31 @@
         <span id="toast-message">Guardado correctamente</span>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import {
-            getAuth,
-            signInAnonymously,
-            signInWithCustomToken,
-            signInWithEmailAndPassword,
-            createUserWithEmailAndPassword,
-            signOut,
-            onAuthStateChanged
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import {
-            getFirestore,
-            doc,
-            setDoc,
-            onSnapshot,
-            collection
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
+    <script>
         // =========================================================
         // CONFIGURACIÓN DE FIREBASE Y AUTENTICACIÓN EN LA NUBE
         // =========================================================
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const DEFAULT_MONTH = '2026-11';
+        const LOCAL_CACHE_KEY = 'finanzas_smart_cop_cache_v1';
+        const FIREBASE_CFG_KEY = 'finanzas_smart_firebase_cfg_v1';
 
         let firebaseApp = null;
         let auth = null;
         let db = null;
+        let fbFirestoreFns = null;
+        let fbAuthFns = null;
         let currentUser = null;
         let unsubscribeMonthsSnapshot = null;
         let authMode = 'login';
-
-        const MONTH_NAMES_ES = [
-            'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-        ];
-
-        const SHORT_MONTH_NAMES_ES = [
-            'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-            'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
-        ];
-
-        function formatCOP(amount) {
-            const num = Math.round(Number(amount) || 0);
-            const sign = num < 0 ? '-' : '';
-            return sign + '$' + Math.abs(num).toLocaleString('es-CO');
-        }
-
-        function formatMonthLabel(monthKey) {
-            if (!monthKey || !monthKey.includes('-')) return monthKey || '';
-            const [yearStr, monthStr] = monthKey.split('-');
-            const monthIdx = parseInt(monthStr, 10) - 1;
-            const monthName = MONTH_NAMES_ES[monthIdx] || monthStr;
-            return `${monthName} ${yearStr}`;
-        }
-
-        function formatExpenseDate(dateStr) {
-            if (!dateStr || !dateStr.includes('-')) return dateStr || '';
-            const parts = dateStr.split('-');
-            if (parts.length !== 3) return dateStr;
-            const [yearStr, monthStr, dayStr] = parts;
-            const monthIdx = parseInt(monthStr, 10) - 1;
-            const shortMonth = SHORT_MONTH_NAMES_ES[monthIdx] || monthStr;
-            return `${parseInt(dayStr, 10)} ${shortMonth} ${yearStr}`;
-        }
-
-        function createDefaultMonthData(monthKey = DEFAULT_MONTH, emptyExpenses = false) {
-            const baseIncome = {
-                salary: 1750905,
-                transport: 249095,
-                extras: 0,
-                payday: 20,
-                healthDeductionEnabled: true,
-                pensionDeductionEnabled: true
-            };
-
-            if (emptyExpenses) {
-                return {
-                    income: baseIncome,
-                    expenses: [],
-                    allocation: {
-                        savings: 0,
-                        leisure: 0,
-                        emergency: 0
-                    }
-                };
-            }
-
-            return {
-                income: baseIncome,
-                expenses: [
-                    { id: 'exp-1', name: 'Arriendo', amount: 600000, category: 'Vivienda', date: `${monthKey}-20` },
-                    { id: 'exp-2', name: 'Comida / Mercado', amount: 400000, category: 'Alimentación', date: `${monthKey}-20` },
-                    { id: 'exp-3', name: 'Tarjeta de Crédito', amount: 300000, category: 'Deudas / Tarjetas', date: `${monthKey}-20` },
-                    { id: 'exp-4', name: 'Internet', amount: 69900, category: 'Servicios', date: `${monthKey}-20` },
-                    { id: 'exp-5', name: 'Plan de Celular', amount: 44900, category: 'Servicios', date: `${monthKey}-20` },
-                    { id: 'exp-6', name: 'Seguro', amount: 44000, category: 'Seguros / Salud', date: `${monthKey}-20` }
-                ],
-                allocation: {
-                    savings: 120000,
-                    leisure: 150000,
-                    emergency: 131128
-                }
-            };
-        }
-
-        // Estado en memoria sincronizado en tiempo real con Firestore
-        let appState = {
-            currentMonth: DEFAULT_MONTH,
-            months: {
-                [DEFAULT_MONTH]: createDefaultMonthData(DEFAULT_MONTH, false)
-            }
-        };
-
-        let currentExpenseFilter = 'Todas';
-        let incomeDoughnutChart = null;
-        let expensesBarChart = null;
-        let toastTimer = null;
-
-        function setSyncIndicator(status) {
-            const dot = document.getElementById('cloud-sync-dot');
-            if (!dot) return;
-            if (status === 'synced') {
-                dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
-                dot.title = 'Sincronizado en la nube';
-            } else if (status === 'syncing') {
-                dot.className = 'w-2 h-2 rounded-full bg-amber-300 animate-pulse';
-                dot.title = 'Sincronizando...';
-            } else {
-                dot.className = 'w-2 h-2 rounded-full bg-rose-400';
-                dot.title = 'Sin conexión a la nube';
-            }
-        }
-
+// ... existing code ... -->
         async function saveState(specificMonthKey = null) {
-            if (!currentUser || !db) return;
+            // Respaldo local inmediato para no perder cambios nunca
+            try {
+                localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(appState));
+            } catch (err) {}
+
+            if (!currentUser || !db || !fbFirestoreFns) return;
             const userId = currentUser.uid;
             const monthToSave = specificMonthKey || appState.currentMonth;
             const monthData = appState.months[monthToSave];
@@ -886,6 +792,7 @@
 
             try {
                 setSyncIndicator('syncing');
+                const { doc, setDoc } = fbFirestoreFns;
                 const monthDocRef = doc(db, 'artifacts', appId, 'users', userId, 'finanzas_months', monthToSave);
                 await setDoc(monthDocRef, {
                     income: monthData.income,
@@ -900,52 +807,18 @@
         }
 
         function subscribeToUserMonths(user) {
-            if (!user || !db) return;
+            if (!user || !db || !fbFirestoreFns) return;
             if (unsubscribeMonthsSnapshot) {
                 unsubscribeMonthsSnapshot();
                 unsubscribeMonthsSnapshot = null;
             }
 
             const userId = user.uid;
+            const { collection, onSnapshot } = fbFirestoreFns;
             const monthsColRef = collection(db, 'artifacts', appId, 'users', userId, 'finanzas_months');
 
             unsubscribeMonthsSnapshot = onSnapshot(
-                monthsColRef,
-                (snapshot) => {
-                    if (snapshot.empty) {
-                        // Si la cuenta aún no tiene datos en la nube, guardar los del mes actual
-                        saveState(appState.currentMonth);
-                        return;
-                    }
-
-                    const loadedMonths = {};
-                    snapshot.forEach((docSnap) => {
-                        const data = docSnap.data();
-                        if (data && data.income) {
-                            loadedMonths[docSnap.id] = {
-                                income: data.income,
-                                expenses: Array.isArray(data.expenses) ? data.expenses : [],
-                                allocation: data.allocation || { savings: 0, leisure: 0, emergency: 0 }
-                            };
-                        }
-                    });
-
-                    if (Object.keys(loadedMonths).length > 0) {
-                        appState.months = loadedMonths;
-                        if (!appState.months[appState.currentMonth]) {
-                            const sortedKeys = Object.keys(loadedMonths).sort();
-                            appState.currentMonth = sortedKeys[sortedKeys.length - 1];
-                        }
-                        syncInputsFromCurrentMonth();
-                    }
-                    setSyncIndicator('synced');
-                },
-                (error) => {
-                    setSyncIndicator('offline');
-                }
-            );
-        }
-
+// ... existing code ... -->
         function updateAuthUI(user) {
             const headerLabel = document.getElementById('header-auth-label');
             const statusBadge = document.getElementById('auth-status-badge');
@@ -954,17 +827,38 @@
             const uidText = document.getElementById('auth-current-uid');
             const formsContainer = document.getElementById('auth-forms-container');
             const signedInActions = document.getElementById('auth-signed-in-actions');
+            const banner = document.getElementById('auth-promo-banner');
+            const bannerIconBox = document.getElementById('auth-banner-icon-box');
+            const bannerTitle = document.getElementById('auth-banner-title');
+            const bannerSubtitle = document.getElementById('auth-banner-subtitle');
+            const bannerBtn = document.getElementById('auth-banner-btn');
 
             if (!user) {
                 if (headerLabel) headerLabel.textContent = 'Iniciar Sesión';
                 if (statusBadge) {
-                    statusBadge.textContent = 'Desconectado';
+                    statusBadge.textContent = 'Modo Local (Sin sesión)';
                     statusBadge.className = 'px-2.5 py-0.5 rounded-full font-bold bg-slate-200 text-slate-700';
                 }
-                if (uidText) uidText.textContent = 'Sin sesión activa';
+                if (uidText) uidText.textContent = 'Inicia sesión para vincular tu cuenta';
                 if (emailRow) emailRow.classList.add('hidden');
                 if (formsContainer) formsContainer.classList.remove('hidden');
                 if (signedInActions) signedInActions.classList.add('hidden');
+                if (banner) {
+                    banner.className = 'bg-indigo-50 border border-indigo-200 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3';
+                    if (bannerIconBox) bannerIconBox.className = 'bg-indigo-600 text-white p-2.5 rounded-xl shrink-0';
+                    if (bannerTitle) {
+                        bannerTitle.className = 'text-xs sm:text-sm font-bold text-indigo-950';
+                        bannerTitle.textContent = 'Inicia sesión para guardar y sincronizar entre tu PC y tu celular';
+                    }
+                    if (bannerSubtitle) {
+                        bannerSubtitle.className = 'text-xs text-indigo-700 mt-0.5';
+                        bannerSubtitle.textContent = 'Crea tu cuenta con correo y contraseña para mantener tus meses guardados en cualquier dispositivo.';
+                    }
+                    if (bannerBtn) {
+                        bannerBtn.className = 'bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-sm inline-flex items-center justify-center gap-2 shrink-0 cursor-pointer';
+                        bannerBtn.innerHTML = '<i class="fa-solid fa-user-check"></i><span>Iniciar Sesión / Crear Cuenta</span>';
+                    }
+                }
                 return;
             }
 
@@ -979,6 +873,22 @@
                 if (emailRow) emailRow.classList.add('hidden');
                 if (formsContainer) formsContainer.classList.remove('hidden');
                 if (signedInActions) signedInActions.classList.add('hidden');
+                if (banner) {
+                    banner.className = 'bg-indigo-50 border border-indigo-200 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3';
+                    if (bannerIconBox) bannerIconBox.className = 'bg-indigo-600 text-white p-2.5 rounded-xl shrink-0';
+                    if (bannerTitle) {
+                        bannerTitle.className = 'text-xs sm:text-sm font-bold text-indigo-950';
+                        bannerTitle.textContent = 'Inicia sesión para guardar y sincronizar entre tu PC y tu celular';
+                    }
+                    if (bannerSubtitle) {
+                        bannerSubtitle.className = 'text-xs text-indigo-700 mt-0.5';
+                        bannerSubtitle.textContent = 'Actualmente estás en modo invitado. Vincula tu correo y contraseña para respaldar tus datos en la nube.';
+                    }
+                    if (bannerBtn) {
+                        bannerBtn.className = 'bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-sm inline-flex items-center justify-center gap-2 shrink-0 cursor-pointer';
+                        bannerBtn.innerHTML = '<i class="fa-solid fa-user-check"></i><span>Iniciar Sesión / Crear Cuenta</span>';
+                    }
+                }
             } else {
                 const displayEmail = user.email || 'Cuenta Activa';
                 if (headerLabel) headerLabel.textContent = displayEmail.split('@')[0];
@@ -990,22 +900,41 @@
                 if (emailText) emailText.textContent = displayEmail;
                 if (formsContainer) formsContainer.classList.add('hidden');
                 if (signedInActions) signedInActions.classList.remove('hidden');
+                if (banner) {
+                    banner.className = 'bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3';
+                    if (bannerIconBox) bannerIconBox.className = 'bg-emerald-600 text-white p-2.5 rounded-xl shrink-0';
+                    if (bannerTitle) {
+                        bannerTitle.className = 'text-xs sm:text-sm font-bold text-emerald-950';
+                        bannerTitle.textContent = `Cuenta sincronizada: ${displayEmail}`;
+                    }
+                    if (bannerSubtitle) {
+                        bannerSubtitle.className = 'text-xs text-emerald-700 mt-0.5';
+                        bannerSubtitle.textContent = 'Tus meses, ingresos y egresos están respaldados en la nube y disponibles en tu PC y celular.';
+                    }
+                    if (bannerBtn) {
+                        bannerBtn.className = 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-sm inline-flex items-center justify-center gap-2 shrink-0 cursor-pointer';
+                        bannerBtn.innerHTML = '<i class="fa-solid fa-shield-check"></i><span>Mi Cuenta</span>';
+                    }
+                }
             }
         }
 
         async function bootstrapFirebase(configObj) {
-            firebaseApp = initializeApp(configObj);
-            auth = getAuth(firebaseApp);
-            db = getFirestore(firebaseApp);
+            const appMod = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+            fbAuthFns = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+            fbFirestoreFns = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
 
-            // Regla obligatoria: autenticar antes de realizar consultas
+            firebaseApp = appMod.initializeApp(configObj);
+            auth = fbAuthFns.getAuth(firebaseApp);
+            db = fbFirestoreFns.getFirestore(firebaseApp);
+
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
+                await fbAuthFns.signInWithCustomToken(auth, __initial_auth_token);
             } else {
-                await signInAnonymously(auth);
+                await fbAuthFns.signInAnonymously(auth);
             }
 
-            onAuthStateChanged(auth, (user) => {
+            fbAuthFns.onAuthStateChanged(auth, (user) => {
                 currentUser = user;
                 updateAuthUI(user);
                 if (!user) {
@@ -1022,57 +951,32 @@
 
         async function initFirebaseAndAuth() {
             try {
+                let configToUse = null;
                 if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                    const parsedConfig = typeof __firebase_config === 'string'
+                    configToUse = typeof __firebase_config === 'string'
                         ? JSON.parse(__firebase_config)
                         : __firebase_config;
-                    await bootstrapFirebase(parsedConfig);
+                } else {
+                    const savedCfg = localStorage.getItem(FIREBASE_CFG_KEY);
+                    if (savedCfg) {
+                        configToUse = JSON.parse(savedCfg);
+                        const jsonField = document.getElementById('custom-firebase-json');
+                        if (jsonField) jsonField.value = savedCfg;
+                    }
+                }
+
+                if (configToUse) {
+                    await bootstrapFirebase(configToUse);
                 } else {
                     setSyncIndicator('offline');
                     updateAuthUI(null);
                 }
             } catch (err) {
                 setSyncIndicator('offline');
+                updateAuthUI(null);
             }
         }
-
-        function openAuthModal() {
-            const modal = document.getElementById('auth-modal');
-            const errBox = document.getElementById('auth-error-msg');
-            if (errBox) errBox.classList.add('hidden');
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-        }
-
-        function closeAuthModal() {
-            const modal = document.getElementById('auth-modal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        }
-
-        function switchAuthMode(mode) {
-            authMode = mode;
-            const loginTab = document.getElementById('auth-tab-login');
-            const regTab = document.getElementById('auth-tab-register');
-            const submitBtn = document.getElementById('auth-submit-btn');
-            const errBox = document.getElementById('auth-error-msg');
-            if (errBox) errBox.classList.add('hidden');
-
-            if (mode === 'login') {
-                loginTab.className = 'py-2 rounded-lg bg-white text-slate-900 shadow-xs transition cursor-pointer';
-                regTab.className = 'py-2 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer';
-                submitBtn.textContent = 'Entrar y Sincronizar Datos';
-            } else {
-                regTab.className = 'py-2 rounded-lg bg-white text-slate-900 shadow-xs transition cursor-pointer';
-                loginTab.className = 'py-2 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer';
-                submitBtn.textContent = 'Crear Cuenta y Guardar en Nube';
-            }
-        }
-
+// ... existing code ... -->
         async function handleAuthFormSubmit(event) {
             event.preventDefault();
             const errBox = document.getElementById('auth-error-msg');
@@ -1080,8 +984,10 @@
             const email = document.getElementById('auth-email').value.trim();
             const password = document.getElementById('auth-password').value;
 
-            if (!auth) {
-                errBox.textContent = 'Conecta primero tu configuración de Firebase abajo si estás ejecutando la app fuera del entorno principal.';
+            if (!auth || !fbAuthFns) {
+                const detailsBox = document.getElementById('external-firebase-details');
+                if (detailsBox) detailsBox.open = true;
+                errBox.textContent = 'Si abriste la app desde GitHub Pages, primero pega abajo la configuración JSON de tu proyecto Firebase y presiona "Conectar Proyecto Firebase".';
                 errBox.classList.remove('hidden');
                 return;
             }
@@ -1093,38 +999,21 @@
 
             try {
                 if (authMode === 'register') {
-                    await createUserWithEmailAndPassword(auth, email, password);
+                    await fbAuthFns.createUserWithEmailAndPassword(auth, email, password);
                     showToast('Cuenta creada y vinculada a la nube');
                 } else {
-                    await signInWithEmailAndPassword(auth, email, password);
+                    await fbAuthFns.signInWithEmailAndPassword(auth, email, password);
                     showToast('Sesión iniciada. Sincronizando tus datos...');
                 }
                 document.getElementById('auth-password').value = '';
                 closeAuthModal();
             } catch (error) {
-                let msg = 'No se pudo completar el inicio de sesión. Verifica tus datos.';
-                if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-                    msg = 'Correo o contraseña incorrectos. Si es tu primera vez, selecciona "Crear Cuenta".';
-                } else if (error.code === 'auth/email-already-in-use') {
-                    msg = 'Este correo ya está registrado. Cambia a "Iniciar Sesión".';
-                } else if (error.code === 'auth/weak-password') {
-                    msg = 'La contraseña debe tener al menos 6 caracteres.';
-                } else if (error.code === 'auth/operation-not-allowed') {
-                    msg = 'Habilita el proveedor "Correo electrónico/Contraseña" en Firebase Authentication.';
-                }
-                errBox.textContent = msg;
-                errBox.classList.remove('hidden');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalLabel;
-            }
-        }
-
+// ... existing code ... -->
         async function handleUserLogout() {
-            if (!auth) return;
+            if (!auth || !fbAuthFns) return;
             try {
-                await signOut(auth);
-                await signInAnonymously(auth);
+                await fbAuthFns.signOut(auth);
+                await fbAuthFns.signInAnonymously(auth);
                 appState = {
                     currentMonth: DEFAULT_MONTH,
                     months: {
@@ -1144,6 +1033,7 @@
             const errBox = document.getElementById('auth-error-msg');
             try {
                 const parsed = JSON.parse(rawJson);
+                localStorage.setItem(FIREBASE_CFG_KEY, JSON.stringify(parsed));
                 await bootstrapFirebase(parsed);
                 errBox.classList.add('hidden');
                 showToast('Firebase conectado. Ya puedes iniciar sesión.');
@@ -1152,1226 +1042,17 @@
                 errBox.classList.remove('hidden');
             }
         }
-
-        function getCurrentMonthData() {
-            if (!appState.months[appState.currentMonth]) {
-                appState.months[appState.currentMonth] = createDefaultMonthData(appState.currentMonth, true);
-            }
-            return appState.months[appState.currentMonth];
-        }
-
-        // =========================================================
-        // NAVEGACIÓN ENTRE PESTAÑAS Y CAMBIO DE MES
-        // =========================================================
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(section => {
-                section.classList.add('hidden');
-            });
-
-            const targetSection = document.getElementById(`view-${tabName}`);
-            if (targetSection) {
-                targetSection.classList.remove('hidden');
-            }
-
-            const tabIds = ['dashboard', 'income', 'expenses'];
-            tabIds.forEach(id => {
-                const btn = document.getElementById(`tab-${id}`);
-                if (!btn) return;
-                if (id === tabName) {
-                    btn.className = 'tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 bg-emerald-600 text-white shadow-sm cursor-pointer';
-                } else {
-                    btn.className = 'tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200 cursor-pointer';
-                }
-            });
-
-            if (tabName === 'dashboard') {
-                updateDashboard();
-            }
-        }
-
-        function changeActiveMonth(newMonthKey) {
-            if (!newMonthKey) return;
-            saveState();
-
-            if (!appState.months[newMonthKey]) {
-                const prevData = getCurrentMonthData();
-                appState.months[newMonthKey] = {
-                    income: {
-                        salary: prevData.income.salary,
-                        transport: prevData.income.transport,
-                        extras: 0,
-                        payday: prevData.income.payday || 20,
-                        healthDeductionEnabled: prevData.income.healthDeductionEnabled !== false,
-                        pensionDeductionEnabled: prevData.income.pensionDeductionEnabled !== false
-                    },
-                    expenses: [],
-                    allocation: {
-                        savings: 0,
-                        leisure: 0,
-                        emergency: 0
-                    }
-                };
-            }
-
-            appState.currentMonth = newMonthKey;
-            saveState();
-            resetExpenseForm();
-            initApp();
-            showToast(`Mes activo: ${formatMonthLabel(newMonthKey)}`);
-        }
-
-        // =========================================================
-        // CÁLCULO DE INGRESOS Y DEDUCCIONES DE LEY (COLOMBIA 2026)
-        // =========================================================
-        function getMonthIncomeBreakdown(monthData) {
-            const inc = monthData.income;
-            const salary = Math.max(0, Number(inc.salary) || 0);
-            const transport = Math.max(0, Number(inc.transport) || 0);
-            const extras = Math.max(0, Number(inc.extras) || 0);
-            const payday = Math.min(31, Math.max(1, parseInt(inc.payday, 10) || 20));
-
-            const healthDeduction = inc.healthDeductionEnabled !== false ? Math.round(salary * 0.04) : 0;
-            const pensionDeduction = inc.pensionDeductionEnabled !== false ? Math.round(salary * 0.04) : 0;
-            const totalDeductions = healthDeduction + pensionDeduction;
-            const gross = salary + transport + extras;
-            const net = Math.max(0, gross - totalDeductions);
-
-            return {
-                salary,
-                transport,
-                extras,
-                payday,
-                gross,
-                healthDeduction,
-                pensionDeduction,
-                totalDeductions,
-                net
-            };
-        }
-
-        function getIncomeBreakdown() {
-            return getMonthIncomeBreakdown(getCurrentMonthData());
-        }
-
-        function getNetIncome() {
-            return getIncomeBreakdown().net;
-        }
-
-        function getTotalExpenses() {
-            return getCurrentMonthData().expenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-        }
-
-        function previewExtraIncome() {
-            const val = Math.max(0, Number(document.getElementById('inp-extras').value) || 0);
-            document.getElementById('fmt-extras').textContent = formatCOP(val);
-        }
-
-        function saveExtraIncome() {
-            const monthData = getCurrentMonthData();
-            const val = Math.round(Math.max(0, Number(document.getElementById('inp-extras').value) || 0));
-            monthData.income.extras = val;
-            document.getElementById('inp-extras').value = val;
-            document.getElementById('fmt-extras').textContent = formatCOP(val);
-            document.getElementById('extras-saved-hint').textContent = `Sumado al depósito neto: ${formatCOP(val)}`;
-            calculateIncome();
-            showToast(`Ingreso extra de ${formatCOP(val)} guardado y sumado al depósito neto`);
-        }
-
-        function calculateIncome() {
-            const monthData = getCurrentMonthData();
-            monthData.income.salary = Math.max(0, Number(document.getElementById('inp-salary').value) || 0);
-            monthData.income.transport = Math.max(0, Number(document.getElementById('inp-transport').value) || 0);
-            monthData.income.payday = Math.min(31, Math.max(1, parseInt(document.getElementById('inp-payday').value, 10) || 20));
-            monthData.income.healthDeductionEnabled = document.getElementById('chk-health').checked;
-            monthData.income.pensionDeductionEnabled = document.getElementById('chk-pension').checked;
-
-            const inc = getIncomeBreakdown();
-
-            document.getElementById('fmt-salary').textContent = formatCOP(inc.salary);
-            document.getElementById('fmt-transport').textContent = formatCOP(inc.transport);
-            document.getElementById('fmt-extras').textContent = formatCOP(inc.extras);
-            document.getElementById('extras-saved-hint').textContent = `Sumado al depósito neto: ${formatCOP(inc.extras)}`;
-
-            document.getElementById('display-health-deduction').textContent = `-${formatCOP(inc.healthDeduction)}`;
-            document.getElementById('display-pension-deduction').textContent = `-${formatCOP(inc.pensionDeduction)}`;
-            document.getElementById('display-total-deductions-inline').textContent = `-${formatCOP(inc.totalDeductions)}`;
-
-            document.getElementById('summary-gross-income').textContent = formatCOP(inc.gross);
-            document.getElementById('summary-total-deductions').textContent = `-${formatCOP(inc.totalDeductions)}`;
-            document.getElementById('summary-net-label').textContent = `Depósito Neto el Día ${inc.payday}`;
-            document.getElementById('display-net-income').textContent = formatCOP(inc.net);
-
-            document.getElementById('header-payday-badge').innerHTML = `<i class="fa-solid fa-calendar-check"></i><span>Corte Día ${inc.payday}</span>`;
-            document.getElementById('expenses-payday-hint').textContent = `Obligaciones sincronizadas para cubrir con tu pago del día ${inc.payday}.`;
-
-            // Ajustar asignación del flujo libre si cambia el neto
-            const positiveFreeCash = Math.max(0, inc.net - getTotalExpenses());
-            let { savings, leisure, emergency } = monthData.allocation;
-            savings = Math.max(0, Number(savings) || 0);
-            leisure = Math.max(0, Number(leisure) || 0);
-            emergency = Math.max(0, Number(emergency) || 0);
-
-            if (positiveFreeCash === 0) {
-                monthData.allocation = { savings: 0, leisure: 0, emergency: 0 };
-            } else if (savings + leisure + emergency === 0) {
-                const s = Math.round(positiveFreeCash * 0.30);
-                const l = Math.round(positiveFreeCash * 0.37);
-                const e = Math.max(0, positiveFreeCash - s - l);
-                monthData.allocation = { savings: s, leisure: l, emergency: e };
-            } else if (savings + leisure + emergency !== positiveFreeCash) {
-                const currentSum = savings + leisure + emergency;
-                const scale = positiveFreeCash / currentSum;
-                const s = Math.round(savings * scale);
-                const l = Math.round(leisure * scale);
-                const e = Math.max(0, positiveFreeCash - s - l);
-                monthData.allocation = { savings: s, leisure: l, emergency: e };
-            }
-
-            saveState();
-            updateDashboard();
-        }
-
-        function resetIncomeTo2026() {
-            const monthData = getCurrentMonthData();
-            monthData.income = {
-                salary: 1750905,
-                transport: 249095,
-                extras: 0,
-                payday: 20,
-                healthDeductionEnabled: true,
-                pensionDeductionEnabled: true
-            };
-            initApp();
-            showToast('Valores SMLMV 2026 restaurados');
-        }
-
-        // =========================================================
-        // ACTUALIZACIÓN DEL DASHBOARD Y SIMULADOR DE FLUJO LIBRE
-        // =========================================================
-        function updateDashboard() {
-            const monthData = getCurrentMonthData();
-            const inc = getIncomeBreakdown();
-            const netIncome = inc.net;
-            const totalExpenses = getTotalExpenses();
-            const freeCash = netIncome - totalExpenses;
-            const positiveFreeCash = Math.max(0, freeCash);
-
-            const savings = Math.min(positiveFreeCash, Math.max(0, Number(monthData.allocation.savings) || 0));
-            const leisure = Math.min(positiveFreeCash - savings, Math.max(0, Number(monthData.allocation.leisure) || 0));
-            const emergency = Math.max(0, positiveFreeCash - savings - leisure);
-            monthData.allocation = { savings, leisure, emergency };
-
-            const expenseRatio = netIncome > 0 ? ((totalExpenses / netIncome) * 100).toFixed(1) : '0.0';
-            const freeRatio = netIncome > 0 ? ((positiveFreeCash / netIncome) * 100).toFixed(1) : '0.0';
-
-            // KPIs superiores
-            document.getElementById('dash-net-income').textContent = formatCOP(netIncome);
-            document.getElementById('dash-payday-sub').innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> Depósito día ${inc.payday}`;
-            document.getElementById('dash-total-expenses').textContent = formatCOP(totalExpenses);
-            document.getElementById('dash-expense-ratio').textContent = `${expenseRatio}% del ingreso neto`;
-            document.getElementById('dash-free-cash').textContent = formatCOP(freeCash);
-            document.getElementById('dash-free-ratio').textContent = freeCash >= 0 ? `${freeRatio}% disponible` : 'Déficit mensual';
-            document.getElementById('dash-suggested-saving').textContent = formatCOP(savings);
-            document.getElementById('dash-annual-saving').textContent = `${formatCOP(savings * 12)}/año`;
-
-            // Barra de distribución global
-            document.getElementById('total-net-badge').textContent = `100% = ${formatCOP(netIncome)}`;
-            const pctExpNet = netIncome > 0 ? Math.min(100, (totalExpenses / netIncome) * 100) : 0;
-            const pctSavNet = netIncome > 0 ? Math.min(100 - pctExpNet, (savings / netIncome) * 100) : 0;
-            const pctLeiNet = netIncome > 0 ? Math.min(100 - pctExpNet - pctSavNet, (leisure / netIncome) * 100) : 0;
-            const pctEmeNet = netIncome > 0 ? Math.max(0, 100 - pctExpNet - pctSavNet - pctLeiNet) : 0;
-
-            document.getElementById('bar-expenses').style.width = `${pctExpNet.toFixed(1)}%`;
-            document.getElementById('bar-savings').style.width = `${pctSavNet.toFixed(1)}%`;
-            document.getElementById('bar-leisure').style.width = `${pctLeiNet.toFixed(1)}%`;
-            document.getElementById('bar-emergency').style.width = `${pctEmeNet.toFixed(1)}%`;
-
-            document.getElementById('leg-expenses').textContent = `${pctExpNet.toFixed(1)}%`;
-            document.getElementById('leg-savings').textContent = `${pctSavNet.toFixed(1)}%`;
-            document.getElementById('leg-leisure').textContent = `${pctLeiNet.toFixed(1)}%`;
-            document.getElementById('leg-emergency').textContent = `${pctEmeNet.toFixed(1)}%`;
-
-            // Deslizadores del simulador
-            document.getElementById('slider-free-cash-label').textContent = formatCOP(positiveFreeCash);
-
-            const sSav = document.getElementById('slider-savings');
-            const sLei = document.getElementById('slider-leisure');
-            const sEme = document.getElementById('slider-emergency');
-
-            sSav.max = positiveFreeCash;
-            sLei.max = positiveFreeCash;
-            sEme.max = positiveFreeCash;
-
-            sSav.value = savings;
-            sLei.value = leisure;
-            sEme.value = emergency;
-
-            document.getElementById('rec-savings').textContent = formatCOP(savings);
-            document.getElementById('rec-leisure').textContent = formatCOP(leisure);
-            document.getElementById('rec-emergency').textContent = formatCOP(emergency);
-
-            document.getElementById('annual-savings-hint').textContent = `${formatCOP(savings * 12)}/año`;
-            document.getElementById('weekly-leisure-hint').textContent = `${formatCOP(Math.round(leisure / 4))}/semana`;
-
-            const pctSavFree = positiveFreeCash > 0 ? ((savings / positiveFreeCash) * 100).toFixed(1) : '0.0';
-            const pctLeiFree = positiveFreeCash > 0 ? ((leisure / positiveFreeCash) * 100).toFixed(1) : '0.0';
-            const pctEmeFree = positiveFreeCash > 0 ? ((emergency / positiveFreeCash) * 100).toFixed(1) : '0.0';
-
-            document.getElementById('pct-savings').textContent = `${pctSavFree}% del flujo libre`;
-            document.getElementById('pct-leisure').textContent = `${pctLeiFree}% del flujo libre`;
-            document.getElementById('pct-emergency').textContent = `${pctEmeFree}% del flujo libre`;
-
-            // Banner de estado del simulador
-            const banner = document.getElementById('allocation-status-banner');
-            if (freeCash < 0) {
-                banner.className = 'mb-4 p-3 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 bg-rose-500/20 border border-rose-500/40 text-rose-200';
-                banner.innerHTML = `<span>⚠️ Tus egresos superan tu ingreso neto por ${formatCOP(Math.abs(freeCash))}</span>`;
-            } else {
-                banner.className = 'mb-4 p-3 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300';
-                banner.innerHTML = `<span>✅ 100% del flujo libre asignado (${formatCOP(positiveFreeCash)})</span>`;
-            }
-
-            // Pie de desglose de categorías
-            document.getElementById('cat-footer-reminder').innerHTML = `<i class="fa-solid fa-calendar-check text-emerald-600 mr-1.5"></i> Paga tus obligaciones de ${formatMonthLabel(appState.currentMonth)} entre el día ${inc.payday} y el ${Math.min(31, inc.payday + 2)}.`;
-            document.getElementById('cat-footer-total').textContent = formatCOP(totalExpenses);
-
-            updateCharts(totalExpenses, savings, leisure, emergency);
-            renderCategoryBreakdown();
-            renderExpensesList();
-            renderConsolidatedMonths();
-        }
-
-        function renderConsolidatedMonths() {
-            const tbody = document.getElementById('consolidated-months-tbody');
-            const tfoot = document.getElementById('consolidated-months-tfoot');
-            const countBadge = document.getElementById('consolidated-months-count');
-            if (!tbody || !tfoot) return;
-
-            const monthKeys = Object.keys(appState.months).sort();
-            if (countBadge) {
-                countBadge.textContent = `${monthKeys.length} ${monthKeys.length === 1 ? 'mes guardado' : 'meses guardados'}`;
-            }
-
-            let sumNet = 0;
-            let sumExp = 0;
-            let sumSav = 0;
-            let sumLei = 0;
-            let sumEme = 0;
-
-            tbody.innerHTML = monthKeys.map(key => {
-                const mData = appState.months[key];
-                const inc = getMonthIncomeBreakdown(mData);
-                const expTotal = (mData.expenses || []).reduce((s, item) => s + (Number(item.amount) || 0), 0);
-                const free = Math.max(0, inc.net - expTotal);
-                const sav = Math.min(free, Math.max(0, Number(mData.allocation?.savings) || 0));
-                const lei = Math.min(free - sav, Math.max(0, Number(mData.allocation?.leisure) || 0));
-                const eme = Math.max(0, free - sav - lei);
-
-                sumNet += inc.net;
-                sumExp += expTotal;
-                sumSav += sav;
-                sumLei += lei;
-                sumEme += eme;
-
-                const isCurrent = key === appState.currentMonth;
-                const rowClass = isCurrent ? 'bg-emerald-50/70' : 'hover:bg-slate-50';
-                const statusPill = isCurrent
-                    ? `<span class="ml-2 text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">Activo</span>`
-                    : '';
-
-                return `
-                    <tr class="${rowClass} transition">
-                        <td class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap">
-                            ${formatMonthLabel(key)}${statusPill}
-                        </td>
-                        <td class="py-3 px-3 text-right font-semibold text-slate-800 whitespace-nowrap">${formatCOP(inc.net)}</td>
-                        <td class="py-3 px-3 text-right font-semibold text-rose-600 whitespace-nowrap">${formatCOP(expTotal)}</td>
-                        <td class="py-3 px-3 text-right font-semibold text-emerald-700 whitespace-nowrap">${formatCOP(sav)}</td>
-                        <td class="py-3 px-3 text-right font-semibold text-amber-700 whitespace-nowrap">${formatCOP(lei)}</td>
-                        <td class="py-3 px-3 text-right font-semibold text-indigo-700 whitespace-nowrap">${formatCOP(eme)}</td>
-                        <td class="py-3 px-3 text-center whitespace-nowrap">
-                            ${isCurrent
-                                ? `<span class="text-[11px] font-semibold text-emerald-700">Editando</span>`
-                                : `<button type="button" onclick="changeActiveMonth('${key}')" class="text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 px-2.5 py-1 rounded-lg transition cursor-pointer">Abrir mes</button>`
-                            }
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            tfoot.innerHTML = `
-                <tr>
-                    <td class="py-3 px-3 rounded-bl-xl whitespace-nowrap">TOTAL CONSOLIDADO (${monthKeys.length})</td>
-                    <td class="py-3 px-3 text-right whitespace-nowrap">${formatCOP(sumNet)}</td>
-                    <td class="py-3 px-3 text-right text-rose-300 whitespace-nowrap">${formatCOP(sumExp)}</td>
-                    <td class="py-3 px-3 text-right text-emerald-300 whitespace-nowrap">${formatCOP(sumSav)}</td>
-                    <td class="py-3 px-3 text-right text-amber-300 whitespace-nowrap">${formatCOP(sumLei)}</td>
-                    <td class="py-3 px-3 text-right text-indigo-300 whitespace-nowrap">${formatCOP(sumEme)}</td>
-                    <td class="py-3 px-3 text-center rounded-br-xl text-[11px] text-slate-300">Histórico</td>
-                </tr>
-            `;
-        }
-
-        function handleSliderInput(changedKey) {
-            const monthData = getCurrentMonthData();
-            const positiveFreeCash = Math.max(0, getNetIncome() - getTotalExpenses());
-            let savings = Number(document.getElementById('slider-savings').value) || 0;
-            let leisure = Number(document.getElementById('slider-leisure').value) || 0;
-            let emergency = Number(document.getElementById('slider-emergency').value) || 0;
-
-            if (changedKey === 'savings') {
-                savings = Math.min(positiveFreeCash, Math.max(0, savings));
-                if (savings + leisure > positiveFreeCash) {
-                    leisure = Math.max(0, positiveFreeCash - savings);
-                }
-                emergency = Math.max(0, positiveFreeCash - savings - leisure);
-            } else if (changedKey === 'leisure') {
-                leisure = Math.min(positiveFreeCash, Math.max(0, leisure));
-                if (savings + leisure > positiveFreeCash) {
-                    savings = Math.max(0, positiveFreeCash - leisure);
-                }
-                emergency = Math.max(0, positiveFreeCash - savings - leisure);
-            } else if (changedKey === 'emergency') {
-                emergency = Math.min(positiveFreeCash, Math.max(0, emergency));
-                const remaining = positiveFreeCash - emergency;
-                if (savings + leisure > remaining) {
-                    leisure = Math.max(0, remaining - savings);
-                    if (savings > remaining) {
-                        savings = remaining;
-                        leisure = 0;
-                    }
-                } else {
-                    leisure = Math.max(0, remaining - savings);
-                }
-            }
-
-            monthData.allocation = { savings, leisure, emergency };
-            saveState();
-            updateDashboard();
-        }
-
-        function resetSlidersToDefault() {
-            const monthData = getCurrentMonthData();
-            const positiveFreeCash = Math.max(0, getNetIncome() - getTotalExpenses());
-            if (positiveFreeCash === 401128) {
-                monthData.allocation = { savings: 120000, leisure: 150000, emergency: 131128 };
-            } else {
-                const savings = Math.round(positiveFreeCash * 0.30);
-                const leisure = Math.round(positiveFreeCash * 0.37);
-                const emergency = Math.max(0, positiveFreeCash - savings - leisure);
-                monthData.allocation = { savings, leisure, emergency };
-            }
-            saveState();
-            updateDashboard();
-            showToast('Distribución sugerida aplicada');
-        }
-
-        // =========================================================
-        // GRÁFICAS INTERACTIVAS CON CHART.JS (DONA Y BARRAS)
-        // =========================================================
-        function updateCharts(totalExpenses, suggestedSavings, suggestedLeisure, suggestedEmergency) {
-            if (typeof Chart === 'undefined') return;
-
-            // 1. Gráfica de Dona: Distribución del Ingreso Neto Real
-            const doughnutCanvas = document.getElementById('chart-income-dist');
-            if (doughnutCanvas) {
-                const doughnutData = [
-                    Math.max(0, totalExpenses),
-                    Math.max(0, suggestedSavings),
-                    Math.max(0, suggestedLeisure),
-                    Math.max(0, suggestedEmergency)
-                ];
-
-                if (incomeDoughnutChart) {
-                    incomeDoughnutChart.data.datasets[0].data = doughnutData;
-                    incomeDoughnutChart.update('none');
-                } else {
-                    incomeDoughnutChart = new Chart(doughnutCanvas.getContext('2d'), {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Egresos Fijos', 'Ahorro Mínimo', 'Ocio y Cine', 'Fondo Urgencias'],
-                            datasets: [{
-                                data: doughnutData,
-                                backgroundColor: ['#f43f5e', '#10b981', '#fbbf24', '#6366f1'],
-                                borderColor: '#ffffff',
-                                borderWidth: 3,
-                                hoverOffset: 6
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            cutout: '62%',
-                            plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: {
-                                        boxWidth: 12,
-                                        padding: 14,
-                                        font: { family: 'Inter', size: 11, weight: '600' },
-                                        color: '#334155'
-                                    }
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(ctx) {
-                                            return ` ${ctx.label}: ${formatCOP(ctx.raw)}`;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-
-            // 2. Gráfica de Barras: Egresos por Categoría
-            const barCanvas = document.getElementById('chart-expenses-cat');
-            if (barCanvas) {
-                const categoryPalette = {
-                    'Vivienda': '#3b82f6',
-                    'Alimentación': '#10b981',
-                    'Deudas / Tarjetas': '#f43f5e',
-                    'Servicios': '#f59e0b',
-                    'Seguros / Salud': '#a855f7',
-                    'Transporte': '#06b6d4',
-                    'Otros': '#64748b'
-                };
-
-                const grouped = {};
-                getCurrentMonthData().expenses.forEach(exp => {
-                    grouped[exp.category] = (grouped[exp.category] || 0) + (Number(exp.amount) || 0);
-                });
-
-                const sortedEntries = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
-                const labels = sortedEntries.length ? sortedEntries.map(e => e[0]) : ['Sin egresos'];
-                const values = sortedEntries.length ? sortedEntries.map(e => e[1]) : [0];
-                const colors = sortedEntries.length
-                    ? sortedEntries.map(e => categoryPalette[e[0]] || '#64748b')
-                    : ['#cbd5e1'];
-
-                if (expensesBarChart) {
-                    expensesBarChart.data.labels = labels;
-                    expensesBarChart.data.datasets[0].data = values;
-                    expensesBarChart.data.datasets[0].backgroundColor = colors;
-                    expensesBarChart.update('none');
-                } else {
-                    expensesBarChart = new Chart(barCanvas.getContext('2d'), {
-                        type: 'bar',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: 'Monto Mensual (COP)',
-                                data: values,
-                                backgroundColor: colors,
-                                borderRadius: 8,
-                                maxBarThickness: 42
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(ctx) {
-                                            return ` ${formatCOP(ctx.raw)}`;
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    grid: { color: '#f1f5f9' },
-                                    ticks: {
-                                        font: { family: 'Inter', size: 10 },
-                                        color: '#64748b',
-                                        callback: function(value) {
-                                            return '$' + (value / 1000).toLocaleString('es-CO') + 'k';
-                                        }
-                                    }
-                                },
-                                x: {
-                                    grid: { display: false },
-                                    ticks: {
-                                        font: { family: 'Inter', size: 10, weight: '600' },
-                                        color: '#334155'
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-        }
-
-        // Captura un canvas sobre fondo blanco sólido para insertarlo nítidamente en el PDF
-        function getCanvasWhiteBackgroundDataURL(canvasId) {
-            const sourceCanvas = document.getElementById(canvasId);
-            if (!sourceCanvas) return null;
-            const exportCanvas = document.createElement('canvas');
-            exportCanvas.width = sourceCanvas.width;
-            exportCanvas.height = sourceCanvas.height;
-            const ctx = exportCanvas.getContext('2d');
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-            ctx.drawImage(sourceCanvas, 0, 0);
-            return exportCanvas.toDataURL('image/png', 1.0);
-        }
-
-        // =========================================================
-        // GENERADOR DE PDF SEGURO Y LOCAL (jsPDF - 100% EN EL CLIENTE)
-        // =========================================================
-        function generateSecurePDF() {
-            if (!window.jspdf || !window.jspdf.jsPDF) {
-                showToast('Cargando librería PDF, inténtalo en un segundo...', 'info');
-                return;
-            }
-
-            try {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-                const inc = getIncomeBreakdown();
-                const netIncome = inc.net;
-                const totalExpenses = getTotalExpenses();
-                const freeCash = netIncome - totalExpenses;
-                const positiveFreeCash = Math.max(0, freeCash);
-
-                const suggestedSavings = Number(getCurrentMonthData().allocation.savings) || 0;
-                const suggestedLeisure = Number(getCurrentMonthData().allocation.leisure) || 0;
-                const suggestedEmergency = Number(getCurrentMonthData().allocation.emergency) || 0;
-
-                const expenseRatio = netIncome > 0 ? ((totalExpenses / netIncome) * 100).toFixed(1) : '0.0';
-                const freeRatio = netIncome > 0 ? ((positiveFreeCash / netIncome) * 100).toFixed(1) : '0.0';
-
-                const fechaActual = new Date().toLocaleDateString('es-CO', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-
-                // 1. ENCABEZADO CORPORATIVO AZUL MARINO (#0f172a)
-                doc.setFillColor(15, 23, 42);
-                doc.rect(0, 0, 210, 35, 'F');
-
-                // Franja inferior verde esmeralda (#10b981)
-                doc.setFillColor(16, 185, 129);
-                doc.rect(0, 35, 210, 2, 'F');
-
-                doc.setTextColor(255, 255, 255);
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(14.5);
-                doc.text(`Finanzas Smart COP - Resumen (${formatMonthLabel(appState.currentMonth)})`, 14, 14);
-
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(9.5);
-                doc.setTextColor(203, 213, 225);
-                doc.text(`Ciclo de Pago: Corte Dia ${inc.payday}   |   Fecha de emision: ${fechaActual}`, 14, 22);
-
-                // Sello de privacidad local
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(8.5);
-                doc.setTextColor(52, 211, 153);
-                doc.text('Generado localmente en tu dispositivo - Datos 100% privados (Sin servidores externos)', 14, 29.5);
-
-                // 2. BLOQUE RESUMEN: INGRESOS / DEDUCCIONES DE LEY Y DISTRIBUCIÓN DEL FLUJO LIBRE
-                let yPos = 44;
-
-                // Tarjeta Izquierda: Ingresos y Deducciones de Ley
-                doc.setFillColor(248, 250, 252);
-                doc.setDrawColor(226, 232, 240);
-                doc.roundedRect(14, yPos, 88, 52, 3, 3, 'FD');
-
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(10);
-                doc.setTextColor(15, 23, 42);
-                doc.text('Ingresos y Deducciones de Ley', 18, yPos + 7);
-
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(8.5);
-
-                const incomeRows = [
-                    ['Salario Basico (SMLMV):', formatCOP(inc.salary)],
-                    ['Auxilio de Transporte:', formatCOP(inc.transport)],
-                    ['Ingresos Extra:', formatCOP(inc.extras)],
-                    ['Deduccion Salud (4%):', `-${formatCOP(inc.healthDeduction)}`],
-                    ['Deduccion Pension (4%):', `-${formatCOP(inc.pensionDeduction)}`]
-                ];
-
-                let rowY = yPos + 14;
-                incomeRows.forEach(([label, val]) => {
-                    doc.setTextColor(71, 85, 105);
-                    doc.text(label, 18, rowY);
-                    doc.setTextColor(15, 23, 42);
-                    doc.text(val, 98, rowY, { align: 'right' });
-                    rowY += 5.5;
-                });
-
-                // Línea total Ingreso Neto Real
-                doc.setDrawColor(16, 185, 129);
-                doc.line(18, rowY - 1.5, 98, rowY - 1.5);
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(9);
-                doc.setTextColor(5, 150, 105);
-                doc.text(`Ingreso Neto Real (Dia ${inc.payday}):`, 18, rowY + 3.5);
-                doc.text(formatCOP(netIncome), 98, rowY + 3.5, { align: 'right' });
-
-                // Tarjeta Derecha: Flujo Libre y Asignación
-                doc.setFillColor(248, 250, 252);
-                doc.setDrawColor(226, 232, 240);
-                doc.roundedRect(108, yPos, 88, 52, 3, 3, 'FD');
-
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(10);
-                doc.setTextColor(15, 23, 42);
-                doc.text('Balance y Asignacion del Flujo Libre', 112, yPos + 7);
-
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(8.5);
-                const flowRows = [
-                    ['Total Egresos Fijos:', `${formatCOP(totalExpenses)} (${expenseRatio}%)`],
-                    ['Flujo Libre Disponible:', `${formatCOP(freeCash)} (${freeRatio}%)`],
-                    ['Ahorro Minimo Fijo:', formatCOP(suggestedSavings)],
-                    ['Presupuesto Ocio / Cine:', formatCOP(suggestedLeisure)],
-                    ['Colchon de Urgencias:', formatCOP(suggestedEmergency)]
-                ];
-
-                rowY = yPos + 14;
-                flowRows.forEach(([label, val]) => {
-                    doc.setTextColor(71, 85, 105);
-                    doc.text(label, 112, rowY);
-                    doc.setTextColor(15, 23, 42);
-                    doc.text(val, 192, rowY, { align: 'right' });
-                    rowY += 5.5;
-                });
-
-                // Proyección Anual de Ahorro
-                doc.setDrawColor(99, 102, 241);
-                doc.line(112, rowY - 1.5, 192, rowY - 1.5);
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(9);
-                doc.setTextColor(79, 70, 229);
-                doc.text('Ahorro Proyectado (12 meses):', 112, rowY + 3.5);
-                doc.text(formatCOP(suggestedSavings * 12), 192, rowY + 3.5, { align: 'right' });
-
-                // 3. SECCIÓN DE GRÁFICAS EN ALTA RESOLUCIÓN
-                yPos = 102;
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(10.5);
-                doc.setTextColor(15, 23, 42);
-                doc.text('Analisis Grafico del Presupuesto', 14, yPos);
-
-                yPos += 3;
-                // Marco Gráfica Izquierda (Dona)
-                doc.setFillColor(255, 255, 255);
-                doc.setDrawColor(226, 232, 240);
-                doc.roundedRect(14, yPos, 88, 62, 3, 3, 'FD');
-                doc.setFontSize(8.5);
-                doc.setTextColor(71, 85, 105);
-                doc.text('Distribucion del Ingreso Neto Real', 18, yPos + 5.5);
-
-                const doughnutImg = getCanvasWhiteBackgroundDataURL('chart-income-dist');
-                if (doughnutImg) {
-                    doc.addImage(doughnutImg, 'PNG', 17, yPos + 8, 82, 51);
-                }
-
-                // Marco Gráfica Derecha (Barras)
-                doc.setFillColor(255, 255, 255);
-                doc.setDrawColor(226, 232, 240);
-                doc.roundedRect(108, yPos, 88, 62, 3, 3, 'FD');
-                doc.text('Egresos por Categoria (COP)', 112, yPos + 5.5);
-
-                const barImg = getCanvasWhiteBackgroundDataURL('chart-expenses-cat');
-                if (barImg) {
-                    doc.addImage(barImg, 'PNG', 111, yPos + 8, 82, 51);
-                }
-
-                // 4. TABLA DETALLADA DE EGRESOS REGISTRADOS
-                yPos = 173;
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(10.5);
-                doc.setTextColor(15, 23, 42);
-                doc.text('Detalle de Egresos Mensuales Registrados', 14, yPos);
-
-                yPos += 4;
-                // Cabecera de tabla
-                doc.setFillColor(15, 23, 42);
-                doc.rect(14, yPos, 182, 8, 'F');
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(8.5);
-                doc.text('Concepto / Gasto', 17, yPos + 5.3);
-                doc.text('Categoria', 82, yPos + 5.3);
-                doc.text('Fecha', 124, yPos + 5.3);
-                doc.text('Monto Mensual', 166, yPos + 5.3, { align: 'right' });
-                doc.text('% Ingreso', 192, yPos + 5.3, { align: 'right' });
-
-                yPos += 8;
-                doc.setFont('helvetica', 'normal');
-
-                const monthExpenses = getCurrentMonthData().expenses;
-                monthExpenses.forEach((exp, index) => {
-                    if (yPos > 272) {
-                        doc.addPage();
-                        yPos = 20;
-                    }
-
-                    if (index % 2 === 0) {
-                        doc.setFillColor(248, 250, 252);
-                        doc.rect(14, yPos, 182, 7.5, 'F');
-                    }
-
-                    doc.setDrawColor(226, 232, 240);
-                    doc.line(14, yPos + 7.5, 196, yPos + 7.5);
-
-                    const pctOfNet = netIncome > 0 ? ((exp.amount / netIncome) * 100).toFixed(1) : '0.0';
-                    doc.setTextColor(15, 23, 42);
-                    doc.text(String(exp.name).substring(0, 32), 17, yPos + 5);
-                    doc.setTextColor(71, 85, 105);
-                    doc.text(String(exp.category), 82, yPos + 5);
-                    doc.text(String(exp.date || '-'), 124, yPos + 5);
-                    doc.setTextColor(15, 23, 42);
-                    doc.text(formatCOP(exp.amount), 166, yPos + 5, { align: 'right' });
-                    doc.text(`${pctOfNet}%`, 192, yPos + 5, { align: 'right' });
-
-                    yPos += 7.5;
-                });
-
-                // Fila Total de Egresos
-                if (yPos > 272) {
-                    doc.addPage();
-                    yPos = 20;
-                }
-                doc.setFillColor(236, 253, 245);
-                doc.rect(14, yPos, 182, 8.5, 'F');
-                doc.setFont('helvetica', 'bold');
-                doc.setTextColor(6, 95, 70);
-                doc.text('TOTAL EGRESOS FIJOS MENSUALES', 17, yPos + 5.6);
-                doc.text(`${monthExpenses.length} items`, 82, yPos + 5.6);
-                doc.text(formatCOP(totalExpenses), 166, yPos + 5.6, { align: 'right' });
-                doc.text(`${expenseRatio}%`, 192, yPos + 5.6, { align: 'right' });
-
-                // Pie de página con sello de privacidad
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(8);
-                doc.setTextColor(100, 116, 139);
-                doc.text(
-                    'Finanzas Smart COP - Documento generado localmente en tu navegador (100% privado, sin servidores externos).',
-                    105,
-                    289,
-                    { align: 'center' }
-                );
-
-                doc.save(`Resumen_Financiero_${appState.currentMonth}.pdf`);
-                showToast('PDF seguro generado y descargado localmente');
-            } catch (error) {
-                showToast('No se pudo generar el PDF en este momento', 'info');
-            }
-        }
-
-        // =========================================================
-        // DESGLOSE POR CATEGORÍA Y GESTIÓN DE EGRESOS
-        // =========================================================
-        const CATEGORY_META = {
-            'Vivienda': { icon: 'fa-house', badge: 'bg-blue-50 text-blue-700 border-blue-200', bar: 'bg-blue-500' },
-            'Alimentación': { icon: 'fa-basket-shopping', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', bar: 'bg-emerald-500' },
-            'Deudas / Tarjetas': { icon: 'fa-credit-card', badge: 'bg-rose-50 text-rose-700 border-rose-200', bar: 'bg-rose-500' },
-            'Servicios': { icon: 'fa-wifi', badge: 'bg-amber-50 text-amber-700 border-amber-200', bar: 'bg-amber-500' },
-            'Seguros / Salud': { icon: 'fa-shield-heart', badge: 'bg-purple-50 text-purple-700 border-purple-200', bar: 'bg-purple-500' },
-            'Transporte': { icon: 'fa-bus', badge: 'bg-cyan-50 text-cyan-700 border-cyan-200', bar: 'bg-cyan-500' },
-            'Otros': { icon: 'fa-receipt', badge: 'bg-slate-100 text-slate-700 border-slate-200', bar: 'bg-slate-500' }
-        };
-
-        function renderCategoryBreakdown() {
-            const container = document.getElementById('category-breakdown-list');
-            const subtotalsContainer = document.getElementById('category-subtotals-list');
-            const netIncome = getNetIncome();
-
-            const grouped = {};
-            getCurrentMonthData().expenses.forEach(exp => {
-                grouped[exp.category] = (grouped[exp.category] || 0) + (Number(exp.amount) || 0);
-            });
-
-            const entries = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
-
-            if (!entries.length) {
-                container.innerHTML = `<p class="text-xs text-slate-400 py-6 text-center">Aún no tienes egresos registrados. Agrega tus gastos en la pestaña Egresos.</p>`;
-                if (subtotalsContainer) subtotalsContainer.innerHTML = `<p class="text-slate-400">Sin categorías activas.</p>`;
-                return;
-            }
-
-            container.innerHTML = entries.map(([cat, amount]) => {
-                const meta = CATEGORY_META[cat] || CATEGORY_META['Otros'];
-                const pct = netIncome > 0 ? ((amount / netIncome) * 100).toFixed(1) : '0.0';
-                const barWidth = Math.min(100, Number(pct));
-                return `
-                    <div>
-                        <div class="flex items-center justify-between text-xs mb-1.5">
-                            <span class="font-semibold text-slate-800 flex items-center gap-2">
-                                <span class="w-6 h-6 rounded-lg inline-flex items-center justify-center border ${meta.badge}">
-                                    <i class="fa-solid ${meta.icon} text-[11px]"></i>
-                                </span>
-                                <span>${cat}</span>
-                            </span>
-                            <span class="font-bold text-slate-900">${formatCOP(amount)} <span class="text-slate-400 font-normal">(${pct}%)</span></span>
-                        </div>
-                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div class="${meta.bar} h-full rounded-full transition-all duration-300" style="width: ${barWidth}%"></div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            if (subtotalsContainer) {
-                subtotalsContainer.innerHTML = entries.map(([cat, amount]) => `
-                    <div class="flex items-center justify-between py-1 border-b border-slate-100 last:border-b-0">
-                        <span class="text-slate-600 font-medium">${cat}</span>
-                        <span class="font-bold text-slate-900">${formatCOP(amount)}</span>
-                    </div>
-                `).join('');
-            }
-        }
-
-        function renderExpensesList() {
-            const container = document.getElementById('expenses-list-container');
-            const copyPrevBtn = document.getElementById('btn-copy-prev-expenses');
-            const monthExpenses = getCurrentMonthData().expenses;
-            const totalExpenses = getTotalExpenses();
-            const netIncome = getNetIncome();
-
-            document.getElementById('expenses-count-badge').textContent = `${monthExpenses.length} ${monthExpenses.length === 1 ? 'ítem' : 'ítems'}`;
-            document.getElementById('expenses-total-badge').textContent = `Total: ${formatCOP(totalExpenses)}`;
-
-            // Mostrar botón para copiar gastos del mes anterior si este mes aún no tiene egresos
-            if (copyPrevBtn) {
-                const prevKey = getPreviousMonthWithExpenses();
-                if (monthExpenses.length === 0 && prevKey) {
-                    copyPrevBtn.classList.remove('hidden');
-                    copyPrevBtn.classList.add('inline-flex');
-                } else {
-                    copyPrevBtn.classList.add('hidden');
-                    copyPrevBtn.classList.remove('inline-flex');
-                }
-            }
-
-            const filtered = currentExpenseFilter === 'Todas'
-                ? monthExpenses
-                : monthExpenses.filter(exp => exp.category === currentExpenseFilter);
-
-            if (!filtered.length) {
-                container.innerHTML = `
-                    <div class="text-center py-10 text-slate-400">
-                        <i class="fa-solid fa-folder-open text-2xl mb-2"></i>
-                        <p class="text-xs font-medium">No hay egresos registrados en ${formatMonthLabel(appState.currentMonth)} para esta categoría.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = filtered.map(exp => {
-                const meta = CATEGORY_META[exp.category] || CATEGORY_META['Otros'];
-                const share = netIncome > 0 ? ((exp.amount / netIncome) * 100).toFixed(1) : '0.0';
-                const formattedDate = exp.date ? formatExpenseDate(exp.date) : '';
-                return `
-                    <div class="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50/60 transition">
-                        <div class="flex items-center gap-3 min-w-[180px]">
-                            <div class="w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${meta.badge}">
-                                <i class="fa-solid ${meta.icon} text-sm"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-slate-900">${escapeHtml(exp.name)}</p>
-                                <div class="flex flex-wrap items-center gap-1.5 mt-0.5">
-                                    <span class="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md border ${meta.badge}">${escapeHtml(exp.category)}</span>
-                                    ${formattedDate ? `<span class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md bg-white text-slate-600 border border-slate-200"><i class="fa-regular fa-calendar text-slate-400"></i>${escapeHtml(formattedDate)}</span>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 ml-auto">
-                            <div class="text-right">
-                                <p class="text-sm font-extrabold text-slate-900">${formatCOP(exp.amount)}</p>
-                                <p class="text-[11px] text-slate-500">${share}% del ingreso neto</p>
-                            </div>
-                            <div class="flex items-center gap-1.5">
-                                <button type="button" onclick="editExpense('${exp.id}')" class="p-2 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition cursor-pointer" title="Editar egreso">
-                                    <i class="fa-solid fa-pen text-xs"></i>
-                                </button>
-                                <button type="button" onclick="deleteExpense('${exp.id}')" class="p-2 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer" title="Eliminar egreso">
-                                    <i class="fa-solid fa-trash text-xs"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function getPreviousMonthWithExpenses() {
-            const keys = Object.keys(appState.months).sort();
-            const currentIdx = keys.indexOf(appState.currentMonth);
-            for (let i = currentIdx - 1; i >= 0; i--) {
-                if ((appState.months[keys[i]].expenses || []).length > 0) {
-                    return keys[i];
-                }
-            }
-            for (let i = keys.length - 1; i >= 0; i--) {
-                if (keys[i] !== appState.currentMonth && (appState.months[keys[i]].expenses || []).length > 0) {
-                    return keys[i];
-                }
-            }
-            return null;
-        }
-
-        function copyExpensesFromPreviousMonth() {
-            const prevKey = getPreviousMonthWithExpenses();
-            if (!prevKey) return;
-            const prevExpenses = appState.months[prevKey].expenses || [];
-            const currentMonthData = getCurrentMonthData();
-            currentMonthData.expenses = prevExpenses.map((exp, idx) => {
-                const dayPart = (exp.date && exp.date.split('-')[2]) ? exp.date.split('-')[2] : '20';
-                return {
-                    ...exp,
-                    id: `exp-${Date.now()}-${idx}`,
-                    date: `${appState.currentMonth}-${dayPart}`
-                };
-            });
-            saveState();
-            updateDashboard();
-            showToast(`Egresos copiados desde ${formatMonthLabel(prevKey)} sin modificar el mes anterior`);
-        }
-
-        function escapeHtml(str) {
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
-        function getDefaultDateForCurrentMonth() {
-            const payday = String(getCurrentMonthData().income.payday || 20).padStart(2, '0');
-            return `${appState.currentMonth}-${payday}`;
-        }
-
-        function handleExpenseSubmit(event) {
-            event.preventDefault();
-            const monthData = getCurrentMonthData();
-            const id = document.getElementById('expense-id').value.trim();
-            const name = document.getElementById('expense-name').value.trim();
-            const amount = Math.round(Number(document.getElementById('expense-amount').value) || 0);
-            const category = document.getElementById('expense-category').value;
-            const date = document.getElementById('expense-date').value || getDefaultDateForCurrentMonth();
-
-            if (!name || amount <= 0) {
-                showToast('Ingresa un nombre y un monto mayor a $0', 'info');
-                return;
-            }
-
-            if (id) {
-                const idx = monthData.expenses.findIndex(e => e.id === id);
-                if (idx !== -1) {
-                    monthData.expenses[idx] = { id, name, amount, category, date };
-                    showToast('Egreso actualizado correctamente');
-                }
-            } else {
-                monthData.expenses.push({
-                    id: 'exp-' + Date.now(),
-                    name,
-                    amount,
-                    category,
-                    date
-                });
-                showToast(`Egreso guardado en ${formatMonthLabel(appState.currentMonth)}`);
-            }
-
-            resetExpenseForm();
-            saveState();
-            updateDashboard();
-        }
-
-        function editExpense(id) {
-            const item = getCurrentMonthData().expenses.find(e => e.id === id);
-            if (!item) return;
-
-            document.getElementById('expense-id').value = item.id;
-            document.getElementById('expense-name').value = item.name;
-            document.getElementById('expense-amount').value = item.amount;
-            document.getElementById('expense-category').value = item.category;
-            document.getElementById('expense-date').value = item.date || getDefaultDateForCurrentMonth();
-
-            document.getElementById('expense-form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-600 mr-2"></i> Editando Egreso`;
-            document.getElementById('expense-submit-btn').textContent = 'Actualizar Egreso';
-            document.getElementById('expense-name').focus();
-        }
-
-        function deleteExpense(id) {
-            const monthData = getCurrentMonthData();
-            monthData.expenses = monthData.expenses.filter(e => e.id !== id);
-            if (document.getElementById('expense-id').value === id) {
-                resetExpenseForm();
-            }
-            saveState();
-            updateDashboard();
-            showToast('Egreso eliminado', 'info');
-        }
-
-        function resetExpenseForm() {
-            document.getElementById('expense-id').value = '';
-            document.getElementById('expense-name').value = '';
-            document.getElementById('expense-amount').value = '';
-            document.getElementById('expense-category').value = 'Vivienda';
-            const dateInput = document.getElementById('expense-date');
-            if (dateInput) {
-                dateInput.value = getDefaultDateForCurrentMonth();
-            }
-            document.getElementById('expense-form-title').innerHTML = `<i class="fa-solid fa-circle-plus text-emerald-600 mr-2"></i> Agregar Nuevo Egreso`;
-            document.getElementById('expense-submit-btn').textContent = 'Guardar Egreso';
-        }
-
-        function filterExpenses(category) {
-            currentExpenseFilter = category;
-            document.querySelectorAll('.cat-filter-btn').forEach(btn => {
-                if (btn.dataset.cat === category) {
-                    btn.className = 'cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white cursor-pointer';
-                } else {
-                    btn.className = 'cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer';
-                }
-            });
-            renderExpensesList();
-        }
-
-        // =========================================================
-        // MODAL DE CONFIRMACIÓN Y TOASTS
-        // =========================================================
-        function confirmResetAll() {
-            const modal = document.getElementById('confirm-modal');
-            const modalMessage = document.getElementById('modal-message');
-            const confirmBtn = document.getElementById('modal-confirm-btn');
-            if (modalMessage) {
-                modalMessage.textContent = `¿Deseas restaurar los valores base de ${formatMonthLabel(appState.currentMonth)}? Los demás meses guardados no se verán afectados.`;
-            }
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            confirmBtn.onclick = function() {
-                appState.months[appState.currentMonth] = createDefaultMonthData(appState.currentMonth, false);
-                saveState();
-                initApp();
-                closeConfirmModal();
-                showToast(`Valores de ${formatMonthLabel(appState.currentMonth)} restaurados`);
-            };
-        }
-
-        function closeConfirmModal() {
-            const modal = document.getElementById('confirm-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast-notification');
-            const icon = document.getElementById('toast-icon');
-            const msg = document.getElementById('toast-message');
-            if (!toast || !msg) return;
-
-            msg.textContent = message;
-            icon.className = type === 'success'
-                ? 'fa-solid fa-circle-check text-emerald-400'
-                : 'fa-solid fa-circle-info text-sky-400';
-
-            toast.classList.remove('hidden');
-            toast.classList.add('flex');
-
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => {
-                toast.classList.add('hidden');
-                toast.classList.remove('flex');
-            }, 3000);
-        }
-
-        // =========================================================
-        // INICIALIZACIÓN DE LA APLICACIÓN AL CARGAR LA PÁGINA
-        // =========================================================
-        function syncInputsFromCurrentMonth() {
-            const monthPicker = document.getElementById('active-month-picker');
-            if (monthPicker) {
-                monthPicker.value = appState.currentMonth;
-            }
-
-            const monthData = getCurrentMonthData();
-            document.getElementById('inp-salary').value = monthData.income.salary;
-            document.getElementById('inp-transport').value = monthData.income.transport;
-            document.getElementById('inp-extras').value = monthData.income.extras || 0;
-            document.getElementById('inp-payday').value = monthData.income.payday || 20;
-            document.getElementById('chk-health').checked = monthData.income.healthDeductionEnabled !== false;
-            document.getElementById('chk-pension').checked = monthData.income.pensionDeductionEnabled !== false;
-
-            const dateInput = document.getElementById('expense-date');
-            if (dateInput && !dateInput.value) {
-                dateInput.value = getDefaultDateForCurrentMonth();
-            }
-
-            renderIncomeAndDashboardWithoutWrite();
-        }
-
-        function renderIncomeAndDashboardWithoutWrite() {
-            const monthData = getCurrentMonthData();
-            const inc = getIncomeBreakdown();
-
-            document.getElementById('fmt-salary').textContent = formatCOP(inc.salary);
-            document.getElementById('fmt-transport').textContent = formatCOP(inc.transport);
-            document.getElementById('fmt-extras').textContent = formatCOP(inc.extras);
-            document.getElementById('extras-saved-hint').textContent = `Sumado al depósito neto: ${formatCOP(inc.extras)}`;
-
-            document.getElementById('display-health-deduction').textContent = `-${formatCOP(inc.healthDeduction)}`;
-            document.getElementById('display-pension-deduction').textContent = `-${formatCOP(inc.pensionDeduction)}`;
-            document.getElementById('display-total-deductions-inline').textContent = `-${formatCOP(inc.totalDeductions)}`;
-
-            document.getElementById('summary-gross-income').textContent = formatCOP(inc.gross);
-            document.getElementById('summary-total-deductions').textContent = `-${formatCOP(inc.totalDeductions)}`;
-            document.getElementById('summary-net-label').textContent = `Depósito Neto el Día ${inc.payday}`;
-            document.getElementById('display-net-income').textContent = formatCOP(inc.net);
-
-            document.getElementById('header-payday-badge').innerHTML = `<i class="fa-solid fa-calendar-check"></i><span>Corte Día ${inc.payday}</span>`;
-            document.getElementById('expenses-payday-hint').textContent = `Obligaciones sincronizadas para cubrir con tu pago del día ${inc.payday}.`;
-
-            updateDashboard();
-        }
-
+// ... existing code ... -->
         function initApp() {
+            try {
+                const cached = localStorage.getItem(LOCAL_CACHE_KEY);
+                if (cached) {
+                    const parsedCache = JSON.parse(cached);
+                    if (parsedCache && parsedCache.months && Object.keys(parsedCache.months).length > 0) {
+                        appState = parsedCache;
+                    }
+                }
+            } catch (e) {}
             syncInputsFromCurrentMonth();
         }
-
-        // Exponer funciones al ámbito global para los eventos HTML
-        window.changeActiveMonth = changeActiveMonth;
-        window.confirmResetAll = confirmResetAll;
-        window.switchTab = switchTab;
-        window.generateSecurePDF = generateSecurePDF;
-        window.resetSlidersToDefault = resetSlidersToDefault;
-        window.handleSliderInput = handleSliderInput;
-        window.resetIncomeTo2026 = resetIncomeTo2026;
-        window.calculateIncome = calculateIncome;
-        window.previewExtraIncome = previewExtraIncome;
-        window.saveExtraIncome = saveExtraIncome;
-        window.handleExpenseSubmit = handleExpenseSubmit;
-        window.resetExpenseForm = resetExpenseForm;
-        window.copyExpensesFromPreviousMonth = copyExpensesFromPreviousMonth;
-        window.filterExpenses = filterExpenses;
-        window.editExpense = editExpense;
-        window.deleteExpense = deleteExpense;
-        window.closeConfirmModal = closeConfirmModal;
-        window.openAuthModal = openAuthModal;
-        window.closeAuthModal = closeAuthModal;
-        window.switchAuthMode = switchAuthMode;
-        window.handleAuthFormSubmit = handleAuthFormSubmit;
-        window.handleUserLogout = handleUserLogout;
-        window.saveCustomFirebaseConfig = saveCustomFirebaseConfig;
-
-        window.onload = async function() {
-            initApp();
-            await initFirebaseAndAuth();
-        };
-    </script>
-</body>
-</html>
+// ... existing code ... -->
