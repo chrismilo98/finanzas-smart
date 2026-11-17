@@ -80,6 +80,11 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2.5">
+                <button type="button" onclick="openAuthModal()" id="header-auth-btn" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/30 px-3.5 py-2 rounded-xl text-xs font-semibold transition shadow-sm cursor-pointer">
+                    <i class="fa-solid fa-user-lock"></i>
+                    <span id="header-auth-label">Iniciar Sesión</span>
+                    <span id="cloud-sync-dot" class="w-2 h-2 rounded-full bg-amber-300" title="Estado de sincronización"></span>
+                </button>
                 <div class="inline-flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-xl">
                     <i class="fa-solid fa-calendar-days text-emerald-400 text-xs"></i>
                     <label for="active-month-picker" class="text-[11px] font-semibold text-slate-300">Mes:</label>
@@ -643,19 +648,132 @@
         </div>
     </div>
 
+    <!-- MODAL DE INICIO DE SESIÓN Y SINCRONIZACIÓN MULTI-DISPOSITIVO -->
+    <div id="auth-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/65 backdrop-blur-xs p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-5 my-auto">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-indigo-100 text-indigo-600 p-3 rounded-xl shrink-0">
+                        <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">Cuenta &amp; Sincronización en la Nube</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Accede desde tu PC o celular sin perder tus datos.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg cursor-pointer" title="Cerrar">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <!-- Estado de la sesión actual -->
+            <div id="auth-session-card" class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="font-semibold text-slate-600">Estado de cuenta:</span>
+                    <span id="auth-status-badge" class="px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800">Sesión Invitado (Temporal)</span>
+                </div>
+                <div id="auth-email-row" class="hidden flex items-center justify-between gap-2">
+                    <span class="font-semibold text-slate-600">Correo vinculado:</span>
+                    <span id="auth-current-email" class="font-bold text-slate-900 truncate max-w-[210px]">-</span>
+                </div>
+                <div class="pt-1 border-t border-slate-200/80">
+                    <span class="font-semibold text-slate-500 block mb-0.5">ID Único de Usuario (UID):</span>
+                    <code id="auth-current-uid" class="block text-[11px] bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 break-all select-all">Conectando...</code>
+                </div>
+            </div>
+
+            <!-- Formulario Iniciar Sesión / Registrarse con Correo y Contraseña -->
+            <div id="auth-forms-container" class="space-y-4">
+                <div class="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+                    <button type="button" id="auth-tab-login" onclick="switchAuthMode('login')" class="py-2 rounded-lg bg-white text-slate-900 shadow-xs transition cursor-pointer">
+                        Iniciar Sesión
+                    </button>
+                    <button type="button" id="auth-tab-register" onclick="switchAuthMode('register')" class="py-2 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer">
+                        Crear Cuenta
+                    </button>
+                </div>
+
+                <form id="auth-form" onsubmit="handleAuthFormSubmit(event)" class="space-y-3">
+                    <div>
+                        <label for="auth-email" class="block text-xs font-bold text-slate-700 uppercase mb-1">Correo Electrónico</label>
+                        <input type="email" id="auth-email" required placeholder="tu.correo@ejemplo.com" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label for="auth-password" class="block text-xs font-bold text-slate-700 uppercase mb-1">Contraseña (mínimo 6 caracteres)</label>
+                        <input type="password" id="auth-password" required minlength="6" placeholder="••••••••" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <p id="auth-error-msg" class="hidden text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-2.5"></p>
+                    <button type="submit" id="auth-submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition shadow-sm cursor-pointer">
+                        Entrar y Sincronizar Datos
+                    </button>
+                </form>
+            </div>
+
+            <!-- Botón Cerrar Sesión (visible cuando hay sesión con correo) -->
+            <div id="auth-signed-in-actions" class="hidden space-y-2.5">
+                <p class="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl p-3 font-medium">
+                    <i class="fa-solid fa-circle-check mr-1"></i> Tu información está respaldada en la nube. Inicia sesión con este mismo correo en tu celular o PC para ver y editar tus datos al instante.
+                </p>
+                <button type="button" onclick="handleUserLogout()" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold py-2.5 px-4 rounded-xl text-xs transition cursor-pointer">
+                    <i class="fa-solid fa-right-from-bracket mr-1.5"></i> Cerrar Sesión en este dispositivo
+                </button>
+            </div>
+
+            <!-- Configuración opcional para despliegue externo (GitHub Pages) -->
+            <details id="external-firebase-details" class="border-t border-slate-200 pt-3 text-xs">
+                <summary class="font-semibold text-slate-600 hover:text-slate-900 cursor-pointer select-none">
+                    <i class="fa-solid fa-gear mr-1 text-slate-400"></i> Configuración de Nube (Solo si usas GitHub Pages)
+                </summary>
+                <div class="mt-2.5 space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <p class="text-[11px] text-slate-500">
+                        Si abres esta app desde GitHub Pages, pega aquí el objeto JSON de configuración de tu proyecto gratuito de Firebase para activar el inicio de sesión multi-dispositivo:
+                    </p>
+                    <textarea id="custom-firebase-json" rows="3" placeholder='{"apiKey":"...","authDomain":"...","projectId":"..."}' class="w-full p-2 bg-white border border-slate-300 rounded-lg text-[11px] font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                    <button type="button" onclick="saveCustomFirebaseConfig()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2 px-3 rounded-lg text-xs transition cursor-pointer">
+                        Conectar Proyecto Firebase
+                    </button>
+                </div>
+            </details>
+        </div>
+    </div>
+
     <!-- NOTIFICACIÓN TOAST FLOTANTE -->
     <div id="toast-notification" class="fixed bottom-5 right-5 z-50 hidden items-center gap-2.5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 text-xs font-semibold">
         <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
         <span id="toast-message">Guardado correctamente</span>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import {
+            getAuth,
+            signInAnonymously,
+            signInWithCustomToken,
+            signInWithEmailAndPassword,
+            createUserWithEmailAndPassword,
+            signOut,
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            setDoc,
+            onSnapshot,
+            collection
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
         // =========================================================
-        // ESTADO GLOBAL Y PERSISTENCIA POR MESES EN LOCALSTORAGE
+        // CONFIGURACIÓN DE FIREBASE Y AUTENTICACIÓN EN LA NUBE
         // =========================================================
-        const STORAGE_KEY = 'finanzas_smart_cop_2026_v5';
-        const LEGACY_STORAGE_KEY = 'finanzas_smart_cop_2026_v4';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const DEFAULT_MONTH = '2026-11';
+
+        let firebaseApp = null;
+        let auth = null;
+        let db = null;
+        let currentUser = null;
+        let unsubscribeMonthsSnapshot = null;
+        let authMode = 'login';
 
         const MONTH_NAMES_ES = [
             'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -731,63 +849,307 @@
             };
         }
 
-        function loadInitialState() {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (raw) {
-                    const parsed = JSON.parse(raw);
-                    if (parsed && parsed.months && typeof parsed.months === 'object') {
-                        const currentMonth = parsed.currentMonth || Object.keys(parsed.months)[0] || DEFAULT_MONTH;
-                        if (!parsed.months[currentMonth]) {
-                            parsed.months[currentMonth] = createDefaultMonthData(currentMonth, false);
-                        }
-                        return { currentMonth, months: parsed.months };
-                    }
-                }
-
-                // Migración automática desde v4 si existiera
-                const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
-                if (legacyRaw) {
-                    const legacy = JSON.parse(legacyRaw);
-                    if (legacy && legacy.income && Array.isArray(legacy.expenses)) {
-                        return {
-                            currentMonth: DEFAULT_MONTH,
-                            months: {
-                                [DEFAULT_MONTH]: {
-                                    income: legacy.income,
-                                    expenses: legacy.expenses.map(e => ({
-                                        ...e,
-                                        date: e.date || `${DEFAULT_MONTH}-20`
-                                    })),
-                                    allocation: legacy.allocation || { savings: 120000, leisure: 150000, emergency: 131128 }
-                                }
-                            }
-                        };
-                    }
-                }
-            } catch (e) {
-                // Si localStorage no está disponible, se usa estado inicial en memoria
+        // Estado en memoria sincronizado en tiempo real con Firestore
+        let appState = {
+            currentMonth: DEFAULT_MONTH,
+            months: {
+                [DEFAULT_MONTH]: createDefaultMonthData(DEFAULT_MONTH, false)
             }
+        };
 
-            return {
-                currentMonth: DEFAULT_MONTH,
-                months: {
-                    [DEFAULT_MONTH]: createDefaultMonthData(DEFAULT_MONTH, false)
-                }
-            };
-        }
-
-        let appState = loadInitialState();
         let currentExpenseFilter = 'Todas';
         let incomeDoughnutChart = null;
         let expensesBarChart = null;
         let toastTimer = null;
 
-        function saveState() {
+        function setSyncIndicator(status) {
+            const dot = document.getElementById('cloud-sync-dot');
+            if (!dot) return;
+            if (status === 'synced') {
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+                dot.title = 'Sincronizado en la nube';
+            } else if (status === 'syncing') {
+                dot.className = 'w-2 h-2 rounded-full bg-amber-300 animate-pulse';
+                dot.title = 'Sincronizando...';
+            } else {
+                dot.className = 'w-2 h-2 rounded-full bg-rose-400';
+                dot.title = 'Sin conexión a la nube';
+            }
+        }
+
+        async function saveState(specificMonthKey = null) {
+            if (!currentUser || !db) return;
+            const userId = currentUser.uid;
+            const monthToSave = specificMonthKey || appState.currentMonth;
+            const monthData = appState.months[monthToSave];
+            if (!monthData) return;
+
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+                setSyncIndicator('syncing');
+                const monthDocRef = doc(db, 'artifacts', appId, 'users', userId, 'finanzas_months', monthToSave);
+                await setDoc(monthDocRef, {
+                    income: monthData.income,
+                    expenses: monthData.expenses,
+                    allocation: monthData.allocation,
+                    updatedAt: Date.now()
+                }, { merge: true });
+                setSyncIndicator('synced');
             } catch (e) {
-                // Ignorar error de cuota o modo privado
+                setSyncIndicator('offline');
+            }
+        }
+
+        function subscribeToUserMonths(user) {
+            if (!user || !db) return;
+            if (unsubscribeMonthsSnapshot) {
+                unsubscribeMonthsSnapshot();
+                unsubscribeMonthsSnapshot = null;
+            }
+
+            const userId = user.uid;
+            const monthsColRef = collection(db, 'artifacts', appId, 'users', userId, 'finanzas_months');
+
+            unsubscribeMonthsSnapshot = onSnapshot(
+                monthsColRef,
+                (snapshot) => {
+                    if (snapshot.empty) {
+                        // Si la cuenta aún no tiene datos en la nube, guardar los del mes actual
+                        saveState(appState.currentMonth);
+                        return;
+                    }
+
+                    const loadedMonths = {};
+                    snapshot.forEach((docSnap) => {
+                        const data = docSnap.data();
+                        if (data && data.income) {
+                            loadedMonths[docSnap.id] = {
+                                income: data.income,
+                                expenses: Array.isArray(data.expenses) ? data.expenses : [],
+                                allocation: data.allocation || { savings: 0, leisure: 0, emergency: 0 }
+                            };
+                        }
+                    });
+
+                    if (Object.keys(loadedMonths).length > 0) {
+                        appState.months = loadedMonths;
+                        if (!appState.months[appState.currentMonth]) {
+                            const sortedKeys = Object.keys(loadedMonths).sort();
+                            appState.currentMonth = sortedKeys[sortedKeys.length - 1];
+                        }
+                        syncInputsFromCurrentMonth();
+                    }
+                    setSyncIndicator('synced');
+                },
+                (error) => {
+                    setSyncIndicator('offline');
+                }
+            );
+        }
+
+        function updateAuthUI(user) {
+            const headerLabel = document.getElementById('header-auth-label');
+            const statusBadge = document.getElementById('auth-status-badge');
+            const emailRow = document.getElementById('auth-email-row');
+            const emailText = document.getElementById('auth-current-email');
+            const uidText = document.getElementById('auth-current-uid');
+            const formsContainer = document.getElementById('auth-forms-container');
+            const signedInActions = document.getElementById('auth-signed-in-actions');
+
+            if (!user) {
+                if (headerLabel) headerLabel.textContent = 'Iniciar Sesión';
+                if (statusBadge) {
+                    statusBadge.textContent = 'Desconectado';
+                    statusBadge.className = 'px-2.5 py-0.5 rounded-full font-bold bg-slate-200 text-slate-700';
+                }
+                if (uidText) uidText.textContent = 'Sin sesión activa';
+                if (emailRow) emailRow.classList.add('hidden');
+                if (formsContainer) formsContainer.classList.remove('hidden');
+                if (signedInActions) signedInActions.classList.add('hidden');
+                return;
+            }
+
+            if (uidText) uidText.textContent = user.uid;
+
+            if (user.isAnonymous) {
+                if (headerLabel) headerLabel.textContent = 'Iniciar Sesión';
+                if (statusBadge) {
+                    statusBadge.textContent = 'Sesión Invitado (Sin correo)';
+                    statusBadge.className = 'px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800';
+                }
+                if (emailRow) emailRow.classList.add('hidden');
+                if (formsContainer) formsContainer.classList.remove('hidden');
+                if (signedInActions) signedInActions.classList.add('hidden');
+            } else {
+                const displayEmail = user.email || 'Cuenta Activa';
+                if (headerLabel) headerLabel.textContent = displayEmail.split('@')[0];
+                if (statusBadge) {
+                    statusBadge.textContent = 'Sincronizado (PC + Celular)';
+                    statusBadge.className = 'px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800';
+                }
+                if (emailRow) emailRow.classList.remove('hidden');
+                if (emailText) emailText.textContent = displayEmail;
+                if (formsContainer) formsContainer.classList.add('hidden');
+                if (signedInActions) signedInActions.classList.remove('hidden');
+            }
+        }
+
+        async function bootstrapFirebase(configObj) {
+            firebaseApp = initializeApp(configObj);
+            auth = getAuth(firebaseApp);
+            db = getFirestore(firebaseApp);
+
+            // Regla obligatoria: autenticar antes de realizar consultas
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+
+            onAuthStateChanged(auth, (user) => {
+                currentUser = user;
+                updateAuthUI(user);
+                if (!user) {
+                    if (unsubscribeMonthsSnapshot) {
+                        unsubscribeMonthsSnapshot();
+                        unsubscribeMonthsSnapshot = null;
+                    }
+                    setSyncIndicator('offline');
+                    return;
+                }
+                subscribeToUserMonths(user);
+            });
+        }
+
+        async function initFirebaseAndAuth() {
+            try {
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    const parsedConfig = typeof __firebase_config === 'string'
+                        ? JSON.parse(__firebase_config)
+                        : __firebase_config;
+                    await bootstrapFirebase(parsedConfig);
+                } else {
+                    setSyncIndicator('offline');
+                    updateAuthUI(null);
+                }
+            } catch (err) {
+                setSyncIndicator('offline');
+            }
+        }
+
+        function openAuthModal() {
+            const modal = document.getElementById('auth-modal');
+            const errBox = document.getElementById('auth-error-msg');
+            if (errBox) errBox.classList.add('hidden');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function closeAuthModal() {
+            const modal = document.getElementById('auth-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function switchAuthMode(mode) {
+            authMode = mode;
+            const loginTab = document.getElementById('auth-tab-login');
+            const regTab = document.getElementById('auth-tab-register');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            const errBox = document.getElementById('auth-error-msg');
+            if (errBox) errBox.classList.add('hidden');
+
+            if (mode === 'login') {
+                loginTab.className = 'py-2 rounded-lg bg-white text-slate-900 shadow-xs transition cursor-pointer';
+                regTab.className = 'py-2 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer';
+                submitBtn.textContent = 'Entrar y Sincronizar Datos';
+            } else {
+                regTab.className = 'py-2 rounded-lg bg-white text-slate-900 shadow-xs transition cursor-pointer';
+                loginTab.className = 'py-2 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer';
+                submitBtn.textContent = 'Crear Cuenta y Guardar en Nube';
+            }
+        }
+
+        async function handleAuthFormSubmit(event) {
+            event.preventDefault();
+            const errBox = document.getElementById('auth-error-msg');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+
+            if (!auth) {
+                errBox.textContent = 'Conecta primero tu configuración de Firebase abajo si estás ejecutando la app fuera del entorno principal.';
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            errBox.classList.add('hidden');
+            submitBtn.disabled = true;
+            const originalLabel = submitBtn.textContent;
+            submitBtn.textContent = 'Conectando...';
+
+            try {
+                if (authMode === 'register') {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    showToast('Cuenta creada y vinculada a la nube');
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    showToast('Sesión iniciada. Sincronizando tus datos...');
+                }
+                document.getElementById('auth-password').value = '';
+                closeAuthModal();
+            } catch (error) {
+                let msg = 'No se pudo completar el inicio de sesión. Verifica tus datos.';
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                    msg = 'Correo o contraseña incorrectos. Si es tu primera vez, selecciona "Crear Cuenta".';
+                } else if (error.code === 'auth/email-already-in-use') {
+                    msg = 'Este correo ya está registrado. Cambia a "Iniciar Sesión".';
+                } else if (error.code === 'auth/weak-password') {
+                    msg = 'La contraseña debe tener al menos 6 caracteres.';
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    msg = 'Habilita el proveedor "Correo electrónico/Contraseña" en Firebase Authentication.';
+                }
+                errBox.textContent = msg;
+                errBox.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalLabel;
+            }
+        }
+
+        async function handleUserLogout() {
+            if (!auth) return;
+            try {
+                await signOut(auth);
+                await signInAnonymously(auth);
+                appState = {
+                    currentMonth: DEFAULT_MONTH,
+                    months: {
+                        [DEFAULT_MONTH]: createDefaultMonthData(DEFAULT_MONTH, false)
+                    }
+                };
+                syncInputsFromCurrentMonth();
+                closeAuthModal();
+                showToast('Sesión cerrada correctamente', 'info');
+            } catch (e) {
+                showToast('Error al cerrar sesión', 'info');
+            }
+        }
+
+        async function saveCustomFirebaseConfig() {
+            const rawJson = document.getElementById('custom-firebase-json').value.trim();
+            const errBox = document.getElementById('auth-error-msg');
+            try {
+                const parsed = JSON.parse(rawJson);
+                await bootstrapFirebase(parsed);
+                errBox.classList.add('hidden');
+                showToast('Firebase conectado. Ya puedes iniciar sesión.');
+            } catch (e) {
+                errBox.textContent = 'El formato JSON de Firebase no es válido. Verifica las llaves y comillas.';
+                errBox.classList.remove('hidden');
             }
         }
 
@@ -1931,7 +2293,7 @@
         // =========================================================
         // INICIALIZACIÓN DE LA APLICACIÓN AL CARGAR LA PÁGINA
         // =========================================================
-        function initApp() {
+        function syncInputsFromCurrentMonth() {
             const monthPicker = document.getElementById('active-month-picker');
             if (monthPicker) {
                 monthPicker.value = appState.currentMonth;
@@ -1950,11 +2312,65 @@
                 dateInput.value = getDefaultDateForCurrentMonth();
             }
 
-            calculateIncome();
+            renderIncomeAndDashboardWithoutWrite();
         }
 
-        window.onload = function() {
+        function renderIncomeAndDashboardWithoutWrite() {
+            const monthData = getCurrentMonthData();
+            const inc = getIncomeBreakdown();
+
+            document.getElementById('fmt-salary').textContent = formatCOP(inc.salary);
+            document.getElementById('fmt-transport').textContent = formatCOP(inc.transport);
+            document.getElementById('fmt-extras').textContent = formatCOP(inc.extras);
+            document.getElementById('extras-saved-hint').textContent = `Sumado al depósito neto: ${formatCOP(inc.extras)}`;
+
+            document.getElementById('display-health-deduction').textContent = `-${formatCOP(inc.healthDeduction)}`;
+            document.getElementById('display-pension-deduction').textContent = `-${formatCOP(inc.pensionDeduction)}`;
+            document.getElementById('display-total-deductions-inline').textContent = `-${formatCOP(inc.totalDeductions)}`;
+
+            document.getElementById('summary-gross-income').textContent = formatCOP(inc.gross);
+            document.getElementById('summary-total-deductions').textContent = `-${formatCOP(inc.totalDeductions)}`;
+            document.getElementById('summary-net-label').textContent = `Depósito Neto el Día ${inc.payday}`;
+            document.getElementById('display-net-income').textContent = formatCOP(inc.net);
+
+            document.getElementById('header-payday-badge').innerHTML = `<i class="fa-solid fa-calendar-check"></i><span>Corte Día ${inc.payday}</span>`;
+            document.getElementById('expenses-payday-hint').textContent = `Obligaciones sincronizadas para cubrir con tu pago del día ${inc.payday}.`;
+
+            updateDashboard();
+        }
+
+        function initApp() {
+            syncInputsFromCurrentMonth();
+        }
+
+        // Exponer funciones al ámbito global para los eventos HTML
+        window.changeActiveMonth = changeActiveMonth;
+        window.confirmResetAll = confirmResetAll;
+        window.switchTab = switchTab;
+        window.generateSecurePDF = generateSecurePDF;
+        window.resetSlidersToDefault = resetSlidersToDefault;
+        window.handleSliderInput = handleSliderInput;
+        window.resetIncomeTo2026 = resetIncomeTo2026;
+        window.calculateIncome = calculateIncome;
+        window.previewExtraIncome = previewExtraIncome;
+        window.saveExtraIncome = saveExtraIncome;
+        window.handleExpenseSubmit = handleExpenseSubmit;
+        window.resetExpenseForm = resetExpenseForm;
+        window.copyExpensesFromPreviousMonth = copyExpensesFromPreviousMonth;
+        window.filterExpenses = filterExpenses;
+        window.editExpense = editExpense;
+        window.deleteExpense = deleteExpense;
+        window.closeConfirmModal = closeConfirmModal;
+        window.openAuthModal = openAuthModal;
+        window.closeAuthModal = closeAuthModal;
+        window.switchAuthMode = switchAuthMode;
+        window.handleAuthFormSubmit = handleAuthFormSubmit;
+        window.handleUserLogout = handleUserLogout;
+        window.saveCustomFirebaseConfig = saveCustomFirebaseConfig;
+
+        window.onload = async function() {
             initApp();
+            await initFirebaseAndAuth();
         };
     </script>
 </body>
