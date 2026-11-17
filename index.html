@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanzas Smart COP 🇨🇴 - Presupuesto & Asesoría Financiera 2026</title>
+    <title>Finanzas Smart COP 🇨🇴 - Presupuesto &amp; Ahorro 2026</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Fuente Inter -->
@@ -100,7 +100,7 @@
     <!-- CONTENIDO PRINCIPAL -->
     <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
 
-        <!-- BARRA DE PESTAÑAS DE NAVEGACIÓN (Visible al 100%, con flex-wrap y amplio espaciado) -->
+        <!-- BARRA DE PESTAÑAS DE NAVEGACIÓN -->
         <nav aria-label="Navegación principal" class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-wrap items-center gap-2.5">
             <button type="button" onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 bg-emerald-600 text-white shadow-sm cursor-pointer">
                 <span>📊 Dashboard &amp; Resumen</span>
@@ -276,7 +276,7 @@
                     </div>
                 </div>
 
-                <!-- Columna Derecha (5 cols): Simulador Interactivo de Flujo Libre ($401.128) -->
+                <!-- Columna Derecha (5 cols): Simulador Interactivo de Flujo Libre -->
                 <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 text-white p-6 rounded-2xl shadow-lg lg:col-span-5 flex flex-col justify-between">
                     <div>
                         <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
@@ -293,7 +293,7 @@
 
                         <!-- Insignia de estado de asignación -->
                         <div id="allocation-status-banner" class="mb-4 p-3 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
-                            <span>✅ 100% del flujo libre asignado ($0 sin asignar)</span>
+                            <span>✅ 100% del flujo libre asignado ($401.128)</span>
                         </div>
 
                         <div class="space-y-4">
@@ -656,12 +656,409 @@
         const STORAGE_KEY = 'finanzas_smart_cop_2026_v5';
         const LEGACY_STORAGE_KEY = 'finanzas_smart_cop_2026_v4';
         const DEFAULT_MONTH = '2026-11';
-// ... existing code ... -->
+
+        const MONTH_NAMES_ES = [
+            'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+        ];
+
+        const SHORT_MONTH_NAMES_ES = [
+            'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+            'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
+        ];
+
+        function formatCOP(amount) {
+            const num = Math.round(Number(amount) || 0);
+            const sign = num < 0 ? '-' : '';
+            return sign + '$' + Math.abs(num).toLocaleString('es-CO');
+        }
+
+        function formatMonthLabel(monthKey) {
+            if (!monthKey || !monthKey.includes('-')) return monthKey || '';
+            const [yearStr, monthStr] = monthKey.split('-');
+            const monthIdx = parseInt(monthStr, 10) - 1;
+            const monthName = MONTH_NAMES_ES[monthIdx] || monthStr;
+            return `${monthName} ${yearStr}`;
+        }
+
+        function formatExpenseDate(dateStr) {
+            if (!dateStr || !dateStr.includes('-')) return dateStr || '';
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return dateStr;
+            const [yearStr, monthStr, dayStr] = parts;
+            const monthIdx = parseInt(monthStr, 10) - 1;
+            const shortMonth = SHORT_MONTH_NAMES_ES[monthIdx] || monthStr;
+            return `${parseInt(dayStr, 10)} ${shortMonth} ${yearStr}`;
+        }
+
+        function createDefaultMonthData(monthKey = DEFAULT_MONTH, emptyExpenses = false) {
+            const baseIncome = {
+                salary: 1750905,
+                transport: 249095,
+                extras: 0,
+                payday: 20,
+                healthDeductionEnabled: true,
+                pensionDeductionEnabled: true
+            };
+
+            if (emptyExpenses) {
+                return {
+                    income: baseIncome,
+                    expenses: [],
+                    allocation: {
+                        savings: 0,
+                        leisure: 0,
+                        emergency: 0
+                    }
+                };
+            }
+
+            return {
+                income: baseIncome,
+                expenses: [
+                    { id: 'exp-1', name: 'Arriendo', amount: 600000, category: 'Vivienda', date: `${monthKey}-20` },
+                    { id: 'exp-2', name: 'Comida / Mercado', amount: 400000, category: 'Alimentación', date: `${monthKey}-20` },
+                    { id: 'exp-3', name: 'Tarjeta de Crédito', amount: 300000, category: 'Deudas / Tarjetas', date: `${monthKey}-20` },
+                    { id: 'exp-4', name: 'Internet', amount: 69900, category: 'Servicios', date: `${monthKey}-20` },
+                    { id: 'exp-5', name: 'Plan de Celular', amount: 44900, category: 'Servicios', date: `${monthKey}-20` },
+                    { id: 'exp-6', name: 'Seguro', amount: 44000, category: 'Seguros / Salud', date: `${monthKey}-20` }
+                ],
+                allocation: {
+                    savings: 120000,
+                    leisure: 150000,
+                    emergency: 131128
+                }
+            };
+        }
+
+        function loadInitialState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && parsed.months && typeof parsed.months === 'object') {
+                        const currentMonth = parsed.currentMonth || Object.keys(parsed.months)[0] || DEFAULT_MONTH;
+                        if (!parsed.months[currentMonth]) {
+                            parsed.months[currentMonth] = createDefaultMonthData(currentMonth, false);
+                        }
+                        return { currentMonth, months: parsed.months };
+                    }
+                }
+
+                // Migración automática desde v4 si existiera
+                const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
+                if (legacyRaw) {
+                    const legacy = JSON.parse(legacyRaw);
+                    if (legacy && legacy.income && Array.isArray(legacy.expenses)) {
+                        return {
+                            currentMonth: DEFAULT_MONTH,
+                            months: {
+                                [DEFAULT_MONTH]: {
+                                    income: legacy.income,
+                                    expenses: legacy.expenses.map(e => ({
+                                        ...e,
+                                        date: e.date || `${DEFAULT_MONTH}-20`
+                                    })),
+                                    allocation: legacy.allocation || { savings: 120000, leisure: 150000, emergency: 131128 }
+                                }
+                            }
+                        };
+                    }
+                }
+            } catch (e) {
+                // Si localStorage no está disponible, se usa estado inicial en memoria
+            }
+
+            return {
+                currentMonth: DEFAULT_MONTH,
+                months: {
+                    [DEFAULT_MONTH]: createDefaultMonthData(DEFAULT_MONTH, false)
+                }
+            };
+        }
+
+        let appState = loadInitialState();
         let currentExpenseFilter = 'Todas';
         let incomeDoughnutChart = null;
         let expensesBarChart = null;
         let toastTimer = null;
-// ... existing code ... -->
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+            } catch (e) {
+                // Ignorar error de cuota o modo privado
+            }
+        }
+
+        function getCurrentMonthData() {
+            if (!appState.months[appState.currentMonth]) {
+                appState.months[appState.currentMonth] = createDefaultMonthData(appState.currentMonth, true);
+            }
+            return appState.months[appState.currentMonth];
+        }
+
+        // =========================================================
+        // NAVEGACIÓN ENTRE PESTAÑAS Y CAMBIO DE MES
+        // =========================================================
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(section => {
+                section.classList.add('hidden');
+            });
+
+            const targetSection = document.getElementById(`view-${tabName}`);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+            }
+
+            const tabIds = ['dashboard', 'income', 'expenses'];
+            tabIds.forEach(id => {
+                const btn = document.getElementById(`tab-${id}`);
+                if (!btn) return;
+                if (id === tabName) {
+                    btn.className = 'tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 bg-emerald-600 text-white shadow-sm cursor-pointer';
+                } else {
+                    btn.className = 'tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200 cursor-pointer';
+                }
+            });
+
+            if (tabName === 'dashboard') {
+                updateDashboard();
+            }
+        }
+
+        function changeActiveMonth(newMonthKey) {
+            if (!newMonthKey) return;
+            saveState();
+
+            if (!appState.months[newMonthKey]) {
+                const prevData = getCurrentMonthData();
+                appState.months[newMonthKey] = {
+                    income: {
+                        salary: prevData.income.salary,
+                        transport: prevData.income.transport,
+                        extras: 0,
+                        payday: prevData.income.payday || 20,
+                        healthDeductionEnabled: prevData.income.healthDeductionEnabled !== false,
+                        pensionDeductionEnabled: prevData.income.pensionDeductionEnabled !== false
+                    },
+                    expenses: [],
+                    allocation: {
+                        savings: 0,
+                        leisure: 0,
+                        emergency: 0
+                    }
+                };
+            }
+
+            appState.currentMonth = newMonthKey;
+            saveState();
+            resetExpenseForm();
+            initApp();
+            showToast(`Mes activo: ${formatMonthLabel(newMonthKey)}`);
+        }
+
+        // =========================================================
+        // CÁLCULO DE INGRESOS Y DEDUCCIONES DE LEY (COLOMBIA 2026)
+        // =========================================================
+        function getMonthIncomeBreakdown(monthData) {
+            const inc = monthData.income;
+            const salary = Math.max(0, Number(inc.salary) || 0);
+            const transport = Math.max(0, Number(inc.transport) || 0);
+            const extras = Math.max(0, Number(inc.extras) || 0);
+            const payday = Math.min(31, Math.max(1, parseInt(inc.payday, 10) || 20));
+
+            const healthDeduction = inc.healthDeductionEnabled !== false ? Math.round(salary * 0.04) : 0;
+            const pensionDeduction = inc.pensionDeductionEnabled !== false ? Math.round(salary * 0.04) : 0;
+            const totalDeductions = healthDeduction + pensionDeduction;
+            const gross = salary + transport + extras;
+            const net = Math.max(0, gross - totalDeductions);
+
+            return {
+                salary,
+                transport,
+                extras,
+                payday,
+                gross,
+                healthDeduction,
+                pensionDeduction,
+                totalDeductions,
+                net
+            };
+        }
+
+        function getIncomeBreakdown() {
+            return getMonthIncomeBreakdown(getCurrentMonthData());
+        }
+
+        function getNetIncome() {
+            return getIncomeBreakdown().net;
+        }
+
+        function getTotalExpenses() {
+            return getCurrentMonthData().expenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+        }
+
+        function previewExtraIncome() {
+            const val = Math.max(0, Number(document.getElementById('inp-extras').value) || 0);
+            document.getElementById('fmt-extras').textContent = formatCOP(val);
+        }
+
+        function saveExtraIncome() {
+            const monthData = getCurrentMonthData();
+            const val = Math.round(Math.max(0, Number(document.getElementById('inp-extras').value) || 0));
+            monthData.income.extras = val;
+            document.getElementById('inp-extras').value = val;
+            document.getElementById('fmt-extras').textContent = formatCOP(val);
+            document.getElementById('extras-saved-hint').textContent = `Sumado al depósito neto: ${formatCOP(val)}`;
+            calculateIncome();
+            showToast(`Ingreso extra de ${formatCOP(val)} guardado y sumado al depósito neto`);
+        }
+
+        function calculateIncome() {
+            const monthData = getCurrentMonthData();
+            monthData.income.salary = Math.max(0, Number(document.getElementById('inp-salary').value) || 0);
+            monthData.income.transport = Math.max(0, Number(document.getElementById('inp-transport').value) || 0);
+            monthData.income.payday = Math.min(31, Math.max(1, parseInt(document.getElementById('inp-payday').value, 10) || 20));
+            monthData.income.healthDeductionEnabled = document.getElementById('chk-health').checked;
+            monthData.income.pensionDeductionEnabled = document.getElementById('chk-pension').checked;
+
+            const inc = getIncomeBreakdown();
+
+            document.getElementById('fmt-salary').textContent = formatCOP(inc.salary);
+            document.getElementById('fmt-transport').textContent = formatCOP(inc.transport);
+            document.getElementById('fmt-extras').textContent = formatCOP(inc.extras);
+            document.getElementById('extras-saved-hint').textContent = `Sumado al depósito neto: ${formatCOP(inc.extras)}`;
+
+            document.getElementById('display-health-deduction').textContent = `-${formatCOP(inc.healthDeduction)}`;
+            document.getElementById('display-pension-deduction').textContent = `-${formatCOP(inc.pensionDeduction)}`;
+            document.getElementById('display-total-deductions-inline').textContent = `-${formatCOP(inc.totalDeductions)}`;
+
+            document.getElementById('summary-gross-income').textContent = formatCOP(inc.gross);
+            document.getElementById('summary-total-deductions').textContent = `-${formatCOP(inc.totalDeductions)}`;
+            document.getElementById('summary-net-label').textContent = `Depósito Neto el Día ${inc.payday}`;
+            document.getElementById('display-net-income').textContent = formatCOP(inc.net);
+
+            document.getElementById('header-payday-badge').innerHTML = `<i class="fa-solid fa-calendar-check"></i><span>Corte Día ${inc.payday}</span>`;
+            document.getElementById('expenses-payday-hint').textContent = `Obligaciones sincronizadas para cubrir con tu pago del día ${inc.payday}.`;
+
+            // Ajustar asignación del flujo libre si cambia el neto
+            const positiveFreeCash = Math.max(0, inc.net - getTotalExpenses());
+            let { savings, leisure, emergency } = monthData.allocation;
+            savings = Math.max(0, Number(savings) || 0);
+            leisure = Math.max(0, Number(leisure) || 0);
+            emergency = Math.max(0, Number(emergency) || 0);
+
+            if (positiveFreeCash === 0) {
+                monthData.allocation = { savings: 0, leisure: 0, emergency: 0 };
+            } else if (savings + leisure + emergency === 0) {
+                const s = Math.round(positiveFreeCash * 0.30);
+                const l = Math.round(positiveFreeCash * 0.37);
+                const e = Math.max(0, positiveFreeCash - s - l);
+                monthData.allocation = { savings: s, leisure: l, emergency: e };
+            } else if (savings + leisure + emergency !== positiveFreeCash) {
+                const currentSum = savings + leisure + emergency;
+                const scale = positiveFreeCash / currentSum;
+                const s = Math.round(savings * scale);
+                const l = Math.round(leisure * scale);
+                const e = Math.max(0, positiveFreeCash - s - l);
+                monthData.allocation = { savings: s, leisure: l, emergency: e };
+            }
+
+            saveState();
+            updateDashboard();
+        }
+
+        function resetIncomeTo2026() {
+            const monthData = getCurrentMonthData();
+            monthData.income = {
+                salary: 1750905,
+                transport: 249095,
+                extras: 0,
+                payday: 20,
+                healthDeductionEnabled: true,
+                pensionDeductionEnabled: true
+            };
+            initApp();
+            showToast('Valores SMLMV 2026 restaurados');
+        }
+
+        // =========================================================
+        // ACTUALIZACIÓN DEL DASHBOARD Y SIMULADOR DE FLUJO LIBRE
+        // =========================================================
+        function updateDashboard() {
+            const monthData = getCurrentMonthData();
+            const inc = getIncomeBreakdown();
+            const netIncome = inc.net;
+            const totalExpenses = getTotalExpenses();
+            const freeCash = netIncome - totalExpenses;
+            const positiveFreeCash = Math.max(0, freeCash);
+
+            const savings = Math.min(positiveFreeCash, Math.max(0, Number(monthData.allocation.savings) || 0));
+            const leisure = Math.min(positiveFreeCash - savings, Math.max(0, Number(monthData.allocation.leisure) || 0));
+            const emergency = Math.max(0, positiveFreeCash - savings - leisure);
+            monthData.allocation = { savings, leisure, emergency };
+
+            const expenseRatio = netIncome > 0 ? ((totalExpenses / netIncome) * 100).toFixed(1) : '0.0';
+            const freeRatio = netIncome > 0 ? ((positiveFreeCash / netIncome) * 100).toFixed(1) : '0.0';
+
+            // KPIs superiores
+            document.getElementById('dash-net-income').textContent = formatCOP(netIncome);
+            document.getElementById('dash-payday-sub').innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> Depósito día ${inc.payday}`;
+            document.getElementById('dash-total-expenses').textContent = formatCOP(totalExpenses);
+            document.getElementById('dash-expense-ratio').textContent = `${expenseRatio}% del ingreso neto`;
+            document.getElementById('dash-free-cash').textContent = formatCOP(freeCash);
+            document.getElementById('dash-free-ratio').textContent = freeCash >= 0 ? `${freeRatio}% disponible` : 'Déficit mensual';
+            document.getElementById('dash-suggested-saving').textContent = formatCOP(savings);
+            document.getElementById('dash-annual-saving').textContent = `${formatCOP(savings * 12)}/año`;
+
+            // Barra de distribución global
+            document.getElementById('total-net-badge').textContent = `100% = ${formatCOP(netIncome)}`;
+            const pctExpNet = netIncome > 0 ? Math.min(100, (totalExpenses / netIncome) * 100) : 0;
+            const pctSavNet = netIncome > 0 ? Math.min(100 - pctExpNet, (savings / netIncome) * 100) : 0;
+            const pctLeiNet = netIncome > 0 ? Math.min(100 - pctExpNet - pctSavNet, (leisure / netIncome) * 100) : 0;
+            const pctEmeNet = netIncome > 0 ? Math.max(0, 100 - pctExpNet - pctSavNet - pctLeiNet) : 0;
+
+            document.getElementById('bar-expenses').style.width = `${pctExpNet.toFixed(1)}%`;
+            document.getElementById('bar-savings').style.width = `${pctSavNet.toFixed(1)}%`;
+            document.getElementById('bar-leisure').style.width = `${pctLeiNet.toFixed(1)}%`;
+            document.getElementById('bar-emergency').style.width = `${pctEmeNet.toFixed(1)}%`;
+
+            document.getElementById('leg-expenses').textContent = `${pctExpNet.toFixed(1)}%`;
+            document.getElementById('leg-savings').textContent = `${pctSavNet.toFixed(1)}%`;
+            document.getElementById('leg-leisure').textContent = `${pctLeiNet.toFixed(1)}%`;
+            document.getElementById('leg-emergency').textContent = `${pctEmeNet.toFixed(1)}%`;
+
+            // Deslizadores del simulador
+            document.getElementById('slider-free-cash-label').textContent = formatCOP(positiveFreeCash);
+
+            const sSav = document.getElementById('slider-savings');
+            const sLei = document.getElementById('slider-leisure');
+            const sEme = document.getElementById('slider-emergency');
+
+            sSav.max = positiveFreeCash;
+            sLei.max = positiveFreeCash;
+            sEme.max = positiveFreeCash;
+
+            sSav.value = savings;
+            sLei.value = leisure;
+            sEme.value = emergency;
+
+            document.getElementById('rec-savings').textContent = formatCOP(savings);
+            document.getElementById('rec-leisure').textContent = formatCOP(leisure);
+            document.getElementById('rec-emergency').textContent = formatCOP(emergency);
+
+            document.getElementById('annual-savings-hint').textContent = `${formatCOP(savings * 12)}/año`;
+            document.getElementById('weekly-leisure-hint').textContent = `${formatCOP(Math.round(leisure / 4))}/semana`;
+
+            const pctSavFree = positiveFreeCash > 0 ? ((savings / positiveFreeCash) * 100).toFixed(1) : '0.0';
+            const pctLeiFree = positiveFreeCash > 0 ? ((leisure / positiveFreeCash) * 100).toFixed(1) : '0.0';
+            const pctEmeFree = positiveFreeCash > 0 ? ((emergency / positiveFreeCash) * 100).toFixed(1) : '0.0';
+
+            document.getElementById('pct-savings').textContent = `${pctSavFree}% del flujo libre`;
+            document.getElementById('pct-leisure').textContent = `${pctLeiFree}% del flujo libre`;
+            document.getElementById('pct-emergency').textContent = `${pctEmeFree}% del flujo libre`;
+
             // Banner de estado del simulador
             const banner = document.getElementById('allocation-status-banner');
             if (freeCash < 0) {
