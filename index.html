@@ -601,7 +601,7 @@
                         <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
                             <i class="fa-solid fa-key"></i>
                         </span>
-                        <input type="password" id="gemini-api-key-input" placeholder="Pega aquí tu API Key de Gemini (AIza...)" autocomplete="off" class="w-full pl-10 pr-12 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <input type="password" id="gemini-api-key-input" placeholder="Pega aquí tu API Key de Gemini (AQ.... o AIza...)" autocomplete="off" class="w-full pl-10 pr-12 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                         <button type="button" onclick="toggleApiKeyVisibility()" id="toggle-key-vis-btn" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer" title="Mostrar u ocultar clave">
                             <i class="fa-solid fa-eye"></i>
                         </button>
@@ -1732,8 +1732,8 @@
                 showToast('Pega una API Key antes de guardar (o usa Eliminar clave)', 'info');
                 return;
             }
-            if (!keyVal.startsWith('AIza') || keyVal.length < 30) {
-                showToast('La clave debe empezar por "AIza..." y tener alrededor de 39 caracteres', 'info');
+            if ((!keyVal.startsWith('AQ.') && !keyVal.startsWith('AIza')) || keyVal.length < 25) {
+                showToast('La clave debe empezar por "AQ...." o "AIza..." (cópiala completa de Google AI Studio)', 'info');
                 return;
             }
             try {
@@ -1844,7 +1844,14 @@
             const systemPrompt = "Actúa como un asesor financiero personal experto en finanzas personales en Colombia (2026). Usa un tono cercano, claro, motivador y muy práctico. Formatea tu respuesta usando encabezados cortos con '###', listas con viñetas '*' y negritas '**' para cifras clave en pesos colombianos (COP).";
             const userQuery = `Mis datos financieros actuales:\n${JSON.stringify(financialContext, null, 2)}\n\nSolicitud: ${focusInstruction}`;
 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+            const apiUrl = apiKey
+                ? 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent'
+                : 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=';
+
+            const requestHeaders = { 'Content-Type': 'application/json' };
+            if (apiKey) {
+                requestHeaders['x-goog-api-key'] = apiKey;
+            }
 
             const payload = {
                 contents: [{ parts: [{ text: userQuery }] }],
@@ -1861,7 +1868,7 @@
                 try {
                     const response = await fetch(apiUrl, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: requestHeaders,
                         body: JSON.stringify(payload)
                     });
                     if (response.ok) {
@@ -1909,7 +1916,7 @@
                         <i class="fa-solid fa-key text-2xl text-amber-400"></i>
                         <p class="font-semibold">Configura tu API Key gratuita de Google AI Studio arriba.</p>
                         <p class="text-xs text-slate-400 max-w-md mx-auto">
-                            Al abrir la app desde GitHub Pages necesitas pegar tu propia API Key (empieza por <code class="text-slate-200">AIza...</code>) y presionar <strong>Guardar clave</strong>.
+                            Al abrir la app desde GitHub Pages necesitas pegar tu propia API Key (empieza por <code class="text-slate-200">AQ....</code> o <code class="text-slate-200">AIza...</code>) y presionar <strong>Guardar clave</strong>.
                         </p>
                     </div>
                 `;
