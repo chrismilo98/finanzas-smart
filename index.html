@@ -116,6 +116,10 @@
             <button type="button" onclick="switchTab('expenses')" id="tab-expenses" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200 cursor-pointer">
                 <span>Egresos</span>
             </button>
+            <button type="button" onclick="switchTab('advisor')" id="tab-advisor" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200 cursor-pointer">
+                <span>Asesor de IA</span>
+                <span id="ai-key-status-dot" class="w-2 h-2 rounded-full bg-emerald-400" title="Asesor de IA listo"></span>
+            </button>
         </nav>
 
         <!-- BANNER VISIBLE DE INICIO DE SESIÓN Y SINCRONIZACIÓN -->
@@ -635,6 +639,120 @@
             </div>
         </section>
 
+        <!-- ========================================================= -->
+        <!-- PESTAÑA 4: ASESOR DE IA SEGURO (GEMINI)                   -->
+        <!-- ========================================================= -->
+        <section id="view-advisor" class="tab-content hidden space-y-6">
+
+            <!-- Tarjeta de Seguridad y Configuración Local de API Key -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                        <div class="bg-emerald-50 text-emerald-600 p-3 rounded-xl shrink-0">
+                            <i class="fa-solid fa-shield-halved text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="text-base font-bold text-slate-900">Configuración Segura del Asesor de IA</h2>
+                                <span id="ai-security-badge" class="text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                                    Almacenamiento Local Cifrado en Navegador
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1">
+                                Tu clave API se guarda <strong>únicamente en tu dispositivo (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">localStorage</code>)</strong> y nunca se sube a GitHub ni a la nube. Además, solo se envían cifras presupuestales anónimas (nunca tu correo, contraseña ni datos bancarios).
+                            </p>
+                        </div>
+                    </div>
+                    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3.5 py-2 rounded-xl transition shrink-0">
+                        <i class="fa-solid fa-up-right-from-square"></i>
+                        <span>Obtener API Key gratis en Google AI Studio</span>
+                    </a>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                    <div class="relative flex-1">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                            <i class="fa-solid fa-key text-xs"></i>
+                        </span>
+                        <input type="password" id="gemini-api-key-input" autocomplete="off" spellcheck="false" placeholder="Pega aquí tu API Key de Google AI Studio (opcional en Vista Previa, requerida en GitHub Pages)" class="w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-mono text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <button type="button" onclick="toggleApiKeyVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer" title="Mostrar u ocultar clave">
+                            <i id="ai-key-eye-icon" class="fa-solid fa-eye text-xs"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="saveGeminiApiKey()" class="flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2.5 rounded-xl text-xs transition shadow-sm inline-flex items-center justify-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span>Guardar clave</span>
+                        </button>
+                        <button type="button" onclick="deleteGeminiApiKey()" class="bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 hover:border-rose-200 font-semibold px-3.5 py-2.5 rounded-xl text-xs transition inline-flex items-center justify-center gap-1.5 cursor-pointer" title="Borrar clave del navegador">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>Eliminar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Principal del Asesor Financiero con Gemini -->
+            <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 text-white p-6 sm:p-8 rounded-2xl shadow-xl space-y-6">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div class="space-y-2">
+                        <span class="inline-flex items-center gap-1.5 bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 px-3 py-1 rounded-full text-xs font-semibold">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>Asesoría Financiera Segura con Gemini</span>
+                        </span>
+                        <h2 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+                            Tu Plan Financiero Personalizado (Colombia 2026)
+                        </h2>
+                        <p id="ai-summary-context" class="text-xs sm:text-sm text-slate-300 max-w-3xl">
+                            Analizamos tu ingreso neto real ($1.859.928 COP), tus egresos fijos ($1.458.800 COP) y tu distribución de ahorro, ocio y urgencias para darte recomendaciones accionables.
+                        </p>
+                    </div>
+                    <button type="button" onclick="askGeminiAdvisor('full')" id="btn-ai-full-analysis" class="bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-extrabold px-5 py-3.5 rounded-xl text-sm transition shadow-lg inline-flex items-center justify-center gap-2 shrink-0 cursor-pointer">
+                        <i class="fa-solid fa-brain"></i>
+                        <span>Generar Análisis Completo</span>
+                    </button>
+                </div>
+
+                <!-- Preguntas Rápidas Sugeridas -->
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" onclick="askGeminiAdvisor('quick', '¿Cómo debo organizar mis pagos y transferencias exactamente el día de mi pago para no quedarme sin liquidez?')" class="bg-white/10 hover:bg-white/15 text-slate-200 border border-white/10 px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer">
+                        📅 ¿Cómo organizarme el día de pago?
+                    </button>
+                    <button type="button" onclick="askGeminiAdvisor('quick', 'Dame una estrategia realista para reducir mis deudas o tarjetas de crédito sin descuidar mi ahorro mensual.')" class="bg-white/10 hover:bg-white/15 text-slate-200 border border-white/10 px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer">
+                        💳 Estrategia para salir de deudas
+                    </button>
+                    <button type="button" onclick="askGeminiAdvisor('quick', '¿Dónde me conviene guardar mi ahorro mensual y mi colchón de urgencias en Colombia en 2026 (cuentas de alto rendimiento, CDT, bolsillos)?')" class="bg-white/10 hover:bg-white/15 text-slate-200 border border-white/10 px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer">
+                        🐷 ¿Dónde guardar mi ahorro en Colombia?
+                    </button>
+                    <button type="button" onclick="askGeminiAdvisor('quick', 'Evalúa si mi presupuesto actual de ocio y gastos variables está equilibrado frente a mi ingreso neto.')" class="bg-white/10 hover:bg-white/15 text-slate-200 border border-white/10 px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer">
+                        🎬 Optimizar mi presupuesto de ocio
+                    </button>
+                </div>
+
+                <!-- Consulta Personalizada -->
+                <form onsubmit="handleCustomAiQuestion(event)" class="flex flex-col sm:flex-row gap-2.5">
+                    <input type="text" id="ai-custom-question" placeholder="Escribe una pregunta personalizada sobre tu presupuesto del mes..." class="flex-1 px-4 py-3 bg-white/10 border border-white/15 rounded-xl text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl text-sm transition inline-flex items-center justify-center gap-2 shrink-0 cursor-pointer">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Preguntar</span>
+                    </button>
+                </form>
+
+                <!-- Área de Respuesta de IA -->
+                <div id="ai-response-container" class="bg-slate-950/60 border border-white/10 rounded-2xl p-5 sm:p-6 min-h-[170px] flex flex-col justify-center">
+                    <div class="text-center space-y-2 py-4">
+                        <div class="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-indigo-500/15 text-indigo-300 mb-1">
+                            <i class="fa-solid fa-robot text-lg"></i>
+                        </div>
+                        <p class="text-sm font-bold text-slate-200">Listo para analizar tu presupuesto de <span id="ai-empty-month-label">Noviembre 2026</span></p>
+                        <p class="text-xs text-slate-400 max-w-lg mx-auto">
+                            Haz clic en <strong>Generar Análisis Completo</strong> o elige una de las preguntas rápidas para recibir un diagnóstico financiero adaptado a tus cifras reales.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- PIE DE PÁGINA -->
@@ -687,7 +805,7 @@
             <div id="auth-session-card" class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
                 <div class="flex items-center justify-between gap-2">
                     <span class="font-semibold text-slate-600">Estado de cuenta:</span>
-                    <span id="auth-status-badge" class="px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800">Sesión Invitado (Temporal)</span>
+                    <span id="auth-status-badge" class="px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800">Modo Local (Sin sesión)</span>
                 </div>
                 <div id="auth-email-row" class="hidden flex items-center justify-between gap-2">
                     <span class="font-semibold text-slate-600">Correo vinculado:</span>
@@ -695,7 +813,7 @@
                 </div>
                 <div class="pt-1 border-t border-slate-200/80">
                     <span class="font-semibold text-slate-500 block mb-0.5">ID Único de Usuario (UID):</span>
-                    <code id="auth-current-uid" class="block text-[11px] bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 break-all select-all">Conectando...</code>
+                    <code id="auth-current-uid" class="block text-[11px] bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 break-all select-all">Inicia sesión para vincular tu cuenta</code>
                 </div>
             </div>
 
@@ -768,6 +886,7 @@
         const DEFAULT_MONTH = '2026-11';
         const LOCAL_CACHE_KEY = 'finanzas_smart_cop_cache_v1';
         const FIREBASE_CFG_KEY = 'finanzas_smart_firebase_cfg_v1';
+        const GEMINI_KEY_STORAGE = 'finanzas_smart_gemini_key_v1';
 
         let firebaseApp = null;
         let auth = null;
@@ -777,9 +896,149 @@
         let currentUser = null;
         let unsubscribeMonthsSnapshot = null;
         let authMode = 'login';
-// ... existing code ... -->
+
+        // =========================================================
+        // ESTADO BASE POR MES Y DATOS COLOMBIA 2026
+        // =========================================================
+        const BASE_EXPENSES_TEMPLATE = [
+            { id: 'exp-1', name: 'Arriendo Mensual', amount: 650000, category: 'Vivienda', day: '20' },
+            { id: 'exp-2', name: 'Mercado y Alimentación', amount: 300000, category: 'Alimentación', day: '21' },
+            { id: 'exp-3', name: 'Cuota Tarjeta de Crédito', amount: 300000, category: 'Deudas / Tarjetas', day: '22' },
+            { id: 'exp-4', name: 'Plan Celular Móvil', amount: 50000, category: 'Servicios', day: '20' },
+            { id: 'exp-5', name: 'Seguro / Plan Exequial', amount: 58800, category: 'Seguros / Salud', day: '20' },
+            { id: 'exp-6', name: 'Transporte Adicional', amount: 100000, category: 'Transporte', day: '20' }
+        ];
+
+        const CATEGORY_COLORS = {
+            'Vivienda': { bg: 'bg-indigo-500', soft: 'bg-indigo-50 text-indigo-700 border-indigo-200', hex: '#6366f1' },
+            'Alimentación': { bg: 'bg-emerald-500', soft: 'bg-emerald-50 text-emerald-700 border-emerald-200', hex: '#10b981' },
+            'Deudas / Tarjetas': { bg: 'bg-rose-500', soft: 'bg-rose-50 text-rose-700 border-rose-200', hex: '#f43f5e' },
+            'Servicios': { bg: 'bg-amber-500', soft: 'bg-amber-50 text-amber-700 border-amber-200', hex: '#f59e0b' },
+            'Seguros / Salud': { bg: 'bg-sky-500', soft: 'bg-sky-50 text-sky-700 border-sky-200', hex: '#0ea5e9' },
+            'Transporte': { bg: 'bg-purple-500', soft: 'bg-purple-50 text-purple-700 border-purple-200', hex: '#a855f7' },
+            'Otros': { bg: 'bg-slate-500', soft: 'bg-slate-100 text-slate-700 border-slate-200', hex: '#64748b' }
+        };
+
+        function createDefaultMonthData(monthKey = DEFAULT_MONTH, emptyExpenses = false) {
+            return {
+                income: {
+                    salary: 1750905,
+                    transport: 249095,
+                    extras: 0,
+                    payday: 20,
+                    health: true,
+                    pension: true
+                },
+                expenses: emptyExpenses
+                    ? []
+                    : BASE_EXPENSES_TEMPLATE.map((item, idx) => ({
+                        id: `${monthKey}-${idx + 1}`,
+                        name: item.name,
+                        amount: item.amount,
+                        category: item.category,
+                        date: `${monthKey}-${item.day}`
+                    })),
+                allocation: {
+                    savings: 120000,
+                    leisure: 150000,
+                    emergency: 131128
+                }
+            };
+        }
+
+        let appState = {
+            currentMonth: DEFAULT_MONTH,
+            months: {
+                [DEFAULT_MONTH]: createDefaultMonthData(DEFAULT_MONTH, false)
+            }
+        };
+
+        let activeExpenseFilter = 'Todas';
+        let incomeDistChart = null;
+        let expensesCatChart = null;
+
+        function getCurrentMonthData() {
+            const m = appState.currentMonth || DEFAULT_MONTH;
+            if (!appState.months[m]) {
+                appState.months[m] = createDefaultMonthData(m, m !== DEFAULT_MONTH);
+            }
+            return appState.months[m];
+        }
+
+        // =========================================================
+        // FORMATEADORES Y UTILIDADES
+        // =========================================================
+        function formatCOP(value) {
+            const num = Math.round(Number(value) || 0);
+            return '$' + num.toLocaleString('es-CO');
+        }
+
+        function formatMonthLabel(monthKey) {
+            if (!monthKey || !monthKey.includes('-')) return monthKey || '';
+            const [year, month] = monthKey.split('-');
+            const names = [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ];
+            const idx = parseInt(month, 10) - 1;
+            return `${names[idx] || month} ${year}`;
+        }
+
+        function formatDateReadable(dateStr) {
+            if (!dateStr || !dateStr.includes('-')) return dateStr || 'Sin fecha';
+            const [y, m, d] = dateStr.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        function escapeHTML(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast-notification');
+            const icon = document.getElementById('toast-icon');
+            const msg = document.getElementById('toast-message');
+            if (!toast || !icon || !msg) return;
+
+            msg.textContent = message;
+            icon.className = type === 'info'
+                ? 'fa-solid fa-circle-info text-sky-400'
+                : 'fa-solid fa-circle-check text-emerald-400';
+
+            toast.classList.remove('hidden');
+            toast.classList.add('flex');
+
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => {
+                toast.classList.add('hidden');
+                toast.classList.remove('flex');
+            }, 3000);
+        }
+
+        function setSyncIndicator(status) {
+            const dot = document.getElementById('cloud-sync-dot');
+            if (!dot) return;
+            if (status === 'synced') {
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+                dot.title = 'Sincronizado en la nube';
+            } else if (status === 'syncing') {
+                dot.className = 'w-2 h-2 rounded-full bg-sky-300 animate-pulse';
+                dot.title = 'Guardando en la nube...';
+            } else {
+                dot.className = 'w-2 h-2 rounded-full bg-amber-300';
+                dot.title = 'Modo local / Sin cuenta vinculada';
+            }
+        }
+
+        // =========================================================
+        // GUARDADO Y SINCRONIZACIÓN FIRESTORE + LOCALSTORAGE
+        // =========================================================
         async function saveState(specificMonthKey = null) {
-            // Respaldo local inmediato para no perder cambios nunca
             try {
                 localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(appState));
             } catch (err) {}
@@ -818,7 +1077,75 @@
             const monthsColRef = collection(db, 'artifacts', appId, 'users', userId, 'finanzas_months');
 
             unsubscribeMonthsSnapshot = onSnapshot(
-// ... existing code ... -->
+                monthsColRef,
+                (snapshot) => {
+                    if (snapshot.empty) {
+                        saveState(appState.currentMonth);
+                        return;
+                    }
+                    snapshot.forEach((docSnap) => {
+                        const data = docSnap.data();
+                        if (data && data.income) {
+                            appState.months[docSnap.id] = {
+                                income: data.income,
+                                expenses: Array.isArray(data.expenses) ? data.expenses : [],
+                                allocation: data.allocation || { savings: 120000, leisure: 150000, emergency: 131128 }
+                            };
+                        }
+                    });
+                    try {
+                        localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(appState));
+                    } catch (e) {}
+                    setSyncIndicator('synced');
+                    syncInputsFromCurrentMonth();
+                },
+                () => {
+                    setSyncIndicator('offline');
+                }
+            );
+        }
+
+        // =========================================================
+        // MODAL Y FUNCIONES DE AUTENTICACIÓN
+        // =========================================================
+        function openAuthModal() {
+            const modal = document.getElementById('auth-modal');
+            const errBox = document.getElementById('auth-error-msg');
+            if (errBox) errBox.classList.add('hidden');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function closeAuthModal() {
+            const modal = document.getElementById('auth-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function switchAuthMode(mode) {
+            authMode = mode === 'register' ? 'register' : 'login';
+            const tabLogin = document.getElementById('auth-tab-login');
+            const tabRegister = document.getElementById('auth-tab-register');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            const errBox = document.getElementById('auth-error-msg');
+
+            if (errBox) errBox.classList.add('hidden');
+
+            if (authMode === 'login') {
+                if (tabLogin) tabLogin.className = 'py-2 rounded-lg bg-white text-slate-900 shadow-xs transition cursor-pointer';
+                if (tabRegister) tabRegister.className = 'py-2 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer';
+                if (submitBtn) submitBtn.textContent = 'Entrar y Sincronizar Datos';
+            } else {
+                if (tabRegister) tabRegister.className = 'py-2 rounded-lg bg-white text-slate-900 shadow-xs transition cursor-pointer';
+                if (tabLogin) tabLogin.className = 'py-2 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer';
+                if (submitBtn) submitBtn.textContent = 'Crear Cuenta y Guardar en Nube';
+            }
+        }
+
         function updateAuthUI(user) {
             const headerLabel = document.getElementById('header-auth-label');
             const statusBadge = document.getElementById('auth-status-badge');
@@ -928,12 +1255,6 @@
             auth = fbAuthFns.getAuth(firebaseApp);
             db = fbFirestoreFns.getFirestore(firebaseApp);
 
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await fbAuthFns.signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await fbAuthFns.signInAnonymously(auth);
-            }
-
             fbAuthFns.onAuthStateChanged(auth, (user) => {
                 currentUser = user;
                 updateAuthUI(user);
@@ -947,6 +1268,17 @@
                 }
                 subscribeToUserMonths(user);
             });
+
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await fbAuthFns.signInWithCustomToken(auth, __initial_auth_token);
+                } else if (!auth.currentUser) {
+                    await fbAuthFns.signInAnonymously(auth);
+                }
+            } catch (authBootErr) {
+                // Si la autenticación anónima no está habilitada en el proyecto Firebase externo, el usuario aún puede iniciar sesión con correo/contraseña
+                updateAuthUI(auth.currentUser || null);
+            }
         }
 
         async function initFirebaseAndAuth() {
@@ -976,7 +1308,7 @@
                 updateAuthUI(null);
             }
         }
-// ... existing code ... -->
+
         async function handleAuthFormSubmit(event) {
             event.preventDefault();
             const errBox = document.getElementById('auth-error-msg');
@@ -1008,12 +1340,34 @@
                 document.getElementById('auth-password').value = '';
                 closeAuthModal();
             } catch (error) {
-// ... existing code ... -->
+                let friendlyMsg = 'No se pudo completar la autenticación. Verifica tus datos.';
+                const code = error && error.code ? error.code : '';
+                if (code === 'auth/email-already-in-use') {
+                    friendlyMsg = 'Este correo ya tiene una cuenta creada. Cambia a la pestaña "Iniciar Sesión".';
+                } else if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+                    friendlyMsg = 'Correo o contraseña incorrectos. Verifica e inténtalo de nuevo.';
+                } else if (code === 'auth/weak-password') {
+                    friendlyMsg = 'La contraseña debe tener al menos 6 caracteres.';
+                } else if (code === 'auth/invalid-email') {
+                    friendlyMsg = 'El formato del correo electrónico no es válido.';
+                } else if (code === 'auth/operation-not-allowed') {
+                    friendlyMsg = 'Activa el proveedor "Correo electrónico/Contraseña" en Firebase Authentication.';
+                }
+                errBox.textContent = friendlyMsg;
+                errBox.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalLabel;
+            }
+        }
+
         async function handleUserLogout() {
             if (!auth || !fbAuthFns) return;
             try {
                 await fbAuthFns.signOut(auth);
-                await fbAuthFns.signInAnonymously(auth);
+                try {
+                    await fbAuthFns.signInAnonymously(auth);
+                } catch (e) {}
                 appState = {
                     currentMonth: DEFAULT_MONTH,
                     months: {
@@ -1042,7 +1396,1130 @@
                 errBox.classList.remove('hidden');
             }
         }
-// ... existing code ... -->
+
+        // =========================================================
+        // NAVEGACIÓN ENTRE PESTAÑAS Y CAMBIO DE MES
+        // =========================================================
+        function switchTab(tabName) {
+            const tabs = ['dashboard', 'income', 'expenses', 'advisor'];
+            tabs.forEach((t) => {
+                const viewEl = document.getElementById(`view-${t}`);
+                const btnEl = document.getElementById(`tab-${t}`);
+                if (!viewEl || !btnEl) return;
+
+                if (t === tabName) {
+                    viewEl.classList.remove('hidden');
+                    btnEl.className = 'tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 bg-emerald-600 text-white shadow-sm cursor-pointer';
+                } else {
+                    viewEl.classList.add('hidden');
+                    btnEl.className = 'tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200 cursor-pointer';
+                }
+            });
+
+            if (tabName === 'dashboard') {
+                updateDashboard();
+            }
+        }
+
+        function changeActiveMonth(newMonthKey) {
+            if (!newMonthKey) return;
+            appState.currentMonth = newMonthKey;
+            if (!appState.months[newMonthKey]) {
+                appState.months[newMonthKey] = createDefaultMonthData(newMonthKey, true);
+                showToast(`Mes ${formatMonthLabel(newMonthKey)} creado`, 'info');
+            } else {
+                showToast(`Mostrando ${formatMonthLabel(newMonthKey)}`, 'info');
+            }
+            syncInputsFromCurrentMonth();
+            saveState(newMonthKey);
+        }
+
+        function syncInputsFromCurrentMonth() {
+            const monthKey = appState.currentMonth || DEFAULT_MONTH;
+            const monthPicker = document.getElementById('active-month-picker');
+            if (monthPicker) monthPicker.value = monthKey;
+
+            const data = getCurrentMonthData();
+            const inc = data.income;
+
+            document.getElementById('inp-salary').value = inc.salary;
+            document.getElementById('inp-transport').value = inc.transport;
+            document.getElementById('inp-extras').value = inc.extras;
+            document.getElementById('inp-payday').value = inc.payday;
+            document.getElementById('chk-health').checked = !!inc.health;
+            document.getElementById('chk-pension').checked = !!inc.pension;
+
+            const extrasHint = document.getElementById('extras-saved-hint');
+            if (extrasHint) {
+                extrasHint.textContent = `Sumado al depósito neto: ${formatCOP(inc.extras)}`;
+            }
+
+            const expDateInput = document.getElementById('expense-date');
+            if (expDateInput && !document.getElementById('expense-id').value) {
+                const dayStr = String(Math.min(28, Math.max(1, inc.payday || 20))).padStart(2, '0');
+                expDateInput.value = `${monthKey}-${dayStr}`;
+            }
+
+            calculateIncome(false);
+            renderExpenses();
+            updateDashboard();
+        }
+
+        // =========================================================
+        // CÁLCULOS DE INGRESOS Y DEDUCCIONES DE LEY (COLOMBIA 2026)
+        // =========================================================
+        function computeNetIncomeObject(inc) {
+            const salary = Math.max(0, Number(inc.salary) || 0);
+            const transport = Math.max(0, Number(inc.transport) || 0);
+            const extras = Math.max(0, Number(inc.extras) || 0);
+            const healthDed = inc.health ? Math.round(salary * 0.04) : 0;
+            const pensionDed = inc.pension ? Math.round(salary * 0.04) : 0;
+            const totalDeductions = healthDed + pensionDed;
+            const gross = salary + transport + extras;
+            const net = Math.max(0, gross - totalDeductions);
+            return { salary, transport, extras, healthDed, pensionDed, totalDeductions, gross, net };
+        }
+
+        function previewExtraIncome() {
+            const val = Math.max(0, Number(document.getElementById('inp-extras').value) || 0);
+            document.getElementById('fmt-extras').textContent = formatCOP(val);
+        }
+
+        function saveExtraIncome() {
+            const data = getCurrentMonthData();
+            const val = Math.max(0, Number(document.getElementById('inp-extras').value) || 0);
+            data.income.extras = val;
+            const extrasHint = document.getElementById('extras-saved-hint');
+            if (extrasHint) {
+                extrasHint.textContent = `Sumado al depósito neto: ${formatCOP(val)}`;
+            }
+            calculateIncome(true);
+            showToast(`Ingreso extra de ${formatCOP(val)} sumado al depósito neto`);
+        }
+
+        function calculateIncome(shouldSave = true) {
+            const data = getCurrentMonthData();
+            data.income.salary = Math.max(0, Number(document.getElementById('inp-salary').value) || 0);
+            data.income.transport = Math.max(0, Number(document.getElementById('inp-transport').value) || 0);
+            data.income.extras = Math.max(0, Number(document.getElementById('inp-extras').value) || 0);
+            data.income.payday = Math.min(31, Math.max(1, Number(document.getElementById('inp-payday').value) || 20));
+            data.income.health = document.getElementById('chk-health').checked;
+            data.income.pension = document.getElementById('chk-pension').checked;
+
+            const calc = computeNetIncomeObject(data.income);
+
+            document.getElementById('fmt-salary').textContent = formatCOP(calc.salary);
+            document.getElementById('fmt-transport').textContent = formatCOP(calc.transport);
+            document.getElementById('fmt-extras').textContent = formatCOP(calc.extras);
+
+            document.getElementById('display-health-deduction').textContent = `-${formatCOP(calc.healthDed)}`;
+            document.getElementById('display-pension-deduction').textContent = `-${formatCOP(calc.pensionDed)}`;
+            document.getElementById('display-total-deductions-inline').textContent = `-${formatCOP(calc.totalDeductions)}`;
+
+            document.getElementById('summary-gross-income').textContent = formatCOP(calc.gross);
+            document.getElementById('summary-total-deductions').textContent = `-${formatCOP(calc.totalDeductions)}`;
+            document.getElementById('summary-net-label').textContent = `Depósito Neto el Día ${data.income.payday}`;
+            document.getElementById('display-net-income').textContent = formatCOP(calc.net);
+
+            const badge = document.getElementById('header-payday-badge');
+            if (badge) {
+                badge.innerHTML = `<i class="fa-solid fa-calendar-check"></i><span>Corte Día ${data.income.payday}</span>`;
+            }
+
+            updateDashboard();
+            if (shouldSave) saveState();
+        }
+
+        function resetIncomeTo2026() {
+            const data = getCurrentMonthData();
+            data.income = {
+                salary: 1750905,
+                transport: 249095,
+                extras: 0,
+                payday: 20,
+                health: true,
+                pension: true
+            };
+            syncInputsFromCurrentMonth();
+            saveState();
+            showToast('Ingresos restaurados a SMLMV Colombia 2026');
+        }
+
+        // =========================================================
+        // SIMULADOR DE FLUJO LIBRE Y DASHBOARD
+        // =========================================================
+        function handleSliderInput(changedKey) {
+            const data = getCurrentMonthData();
+            const calc = computeNetIncomeObject(data.income);
+            const totalExpenses = data.expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+            const freeCash = Math.max(0, calc.net - totalExpenses);
+
+            let s = Number(document.getElementById('slider-savings').value) || 0;
+            let l = Number(document.getElementById('slider-leisure').value) || 0;
+            let e = Number(document.getElementById('slider-emergency').value) || 0;
+
+            if (s + l + e > freeCash) {
+                const excess = (s + l + e) - freeCash;
+                if (changedKey === 'savings') {
+                    const takeE = Math.min(e, excess);
+                    e -= takeE;
+                    l = Math.max(0, l - (excess - takeE));
+                } else if (changedKey === 'leisure') {
+                    const takeE = Math.min(e, excess);
+                    e -= takeE;
+                    s = Math.max(0, s - (excess - takeE));
+                } else {
+                    const takeL = Math.min(l, excess);
+                    l -= takeL;
+                    s = Math.max(0, s - (excess - takeL));
+                }
+            }
+
+            data.allocation = { savings: s, leisure: l, emergency: e };
+            updateDashboard();
+            saveState();
+        }
+
+        function resetSlidersToDefault() {
+            const data = getCurrentMonthData();
+            const calc = computeNetIncomeObject(data.income);
+            const totalExpenses = data.expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+            const freeCash = Math.max(0, calc.net - totalExpenses);
+
+            if (freeCash >= 401128) {
+                data.allocation = {
+                    savings: 120000,
+                    leisure: 150000,
+                    emergency: freeCash - 270000
+                };
+            } else {
+                const s = Math.round(freeCash * 0.30);
+                const l = Math.round(freeCash * 0.37);
+                const e = Math.max(0, freeCash - s - l);
+                data.allocation = { savings: s, leisure: l, emergency: e };
+            }
+
+            updateDashboard();
+            saveState();
+            showToast('Distribución sugerida aplicada');
+        }
+
+        function updateDashboard() {
+            const data = getCurrentMonthData();
+            const calc = computeNetIncomeObject(data.income);
+            const totalExpenses = data.expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+            const freeCash = Math.max(0, calc.net - totalExpenses);
+
+            let { savings, leisure, emergency } = data.allocation;
+            if (savings + leisure + emergency > freeCash) {
+                savings = Math.min(savings, freeCash);
+                leisure = Math.min(leisure, Math.max(0, freeCash - savings));
+                emergency = Math.max(0, freeCash - savings - leisure);
+                data.allocation = { savings, leisure, emergency };
+            }
+
+            const expPct = calc.net > 0 ? ((totalExpenses / calc.net) * 100).toFixed(1) : '0.0';
+            const freePct = calc.net > 0 ? ((freeCash / calc.net) * 100).toFixed(1) : '0.0';
+
+            document.getElementById('dash-net-income').textContent = formatCOP(calc.net);
+            document.getElementById('dash-payday-sub').innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> Depósito día ${data.income.payday}`;
+            document.getElementById('dash-total-expenses').textContent = formatCOP(totalExpenses);
+            document.getElementById('dash-expense-ratio').textContent = `${expPct}% del ingreso neto`;
+            document.getElementById('dash-free-cash').textContent = formatCOP(freeCash);
+            document.getElementById('dash-free-ratio').textContent = `${freePct}% disponible`;
+            document.getElementById('dash-suggested-saving').textContent = formatCOP(savings);
+            document.getElementById('dash-annual-saving').textContent = `${formatCOP(savings * 12)}/año`;
+
+            // Barra superior de distribución
+            document.getElementById('total-net-badge').textContent = `100% = ${formatCOP(calc.net)}`;
+            const pExp = calc.net > 0 ? Math.min(100, (totalExpenses / calc.net) * 100) : 0;
+            const pSav = calc.net > 0 ? Math.min(100, (savings / calc.net) * 100) : 0;
+            const pLei = calc.net > 0 ? Math.min(100, (leisure / calc.net) * 100) : 0;
+            const pEmg = calc.net > 0 ? Math.min(100, (emergency / calc.net) * 100) : 0;
+
+            document.getElementById('bar-expenses').style.width = `${pExp.toFixed(1)}%`;
+            document.getElementById('bar-savings').style.width = `${pSav.toFixed(1)}%`;
+            document.getElementById('bar-leisure').style.width = `${pLei.toFixed(1)}%`;
+            document.getElementById('bar-emergency').style.width = `${pEmg.toFixed(1)}%`;
+
+            document.getElementById('leg-expenses').textContent = `${pExp.toFixed(1)}%`;
+            document.getElementById('leg-savings').textContent = `${pSav.toFixed(1)}%`;
+            document.getElementById('leg-leisure').textContent = `${pLei.toFixed(1)}%`;
+            document.getElementById('leg-emergency').textContent = `${pEmg.toFixed(1)}%`;
+
+            // Sliders del simulador
+            document.getElementById('slider-free-cash-label').textContent = formatCOP(freeCash);
+            const sSlider = document.getElementById('slider-savings');
+            const lSlider = document.getElementById('slider-leisure');
+            const eSlider = document.getElementById('slider-emergency');
+
+            sSlider.max = freeCash;
+            lSlider.max = freeCash;
+            eSlider.max = freeCash;
+            sSlider.value = savings;
+            lSlider.value = leisure;
+            eSlider.value = emergency;
+
+            document.getElementById('rec-savings').textContent = formatCOP(savings);
+            document.getElementById('rec-leisure').textContent = formatCOP(leisure);
+            document.getElementById('rec-emergency').textContent = formatCOP(emergency);
+
+            document.getElementById('annual-savings-hint').textContent = `${formatCOP(savings * 12)}/año`;
+            document.getElementById('weekly-leisure-hint').textContent = `${formatCOP(Math.round(leisure / 4))}/semana`;
+
+            const pctS = freeCash > 0 ? ((savings / freeCash) * 100).toFixed(1) : '0.0';
+            const pctL = freeCash > 0 ? ((leisure / freeCash) * 100).toFixed(1) : '0.0';
+            const pctE = freeCash > 0 ? ((emergency / freeCash) * 100).toFixed(1) : '0.0';
+
+            document.getElementById('pct-savings').textContent = `${pctS}% del flujo libre`;
+            document.getElementById('pct-leisure').textContent = `${pctL}% del flujo libre`;
+            document.getElementById('pct-emergency').textContent = `${pctE}% del flujo libre`;
+
+            const assigned = savings + leisure + emergency;
+            const unassigned = Math.max(0, freeCash - assigned);
+            const banner = document.getElementById('allocation-status-banner');
+            if (freeCash === 0) {
+                banner.className = 'mb-4 p-3 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 bg-rose-500/20 border border-rose-500/40 text-rose-200';
+                banner.innerHTML = '<span>⚠️ Sin flujo libre disponible este mes</span>';
+            } else if (unassigned === 0) {
+                banner.className = 'mb-4 p-3 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300';
+                banner.innerHTML = `<span>✅ 100% del flujo libre asignado (${formatCOP(assigned)})</span>`;
+            } else {
+                const assignedPct = ((assigned / freeCash) * 100).toFixed(0);
+                banner.className = 'mb-4 p-3 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 bg-amber-500/15 border border-amber-500/30 text-amber-200';
+                banner.innerHTML = `<span>📊 ${assignedPct}% asignado • Sin asignar: ${formatCOP(unassigned)}</span>`;
+            }
+
+            // Desglose por categoría
+            const catTotals = {};
+            data.expenses.forEach((exp) => {
+                catTotals[exp.category] = (catTotals[exp.category] || 0) + (Number(exp.amount) || 0);
+            });
+
+            const breakdownContainer = document.getElementById('category-breakdown-list');
+            const sortedCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+
+            if (sortedCats.length === 0) {
+                breakdownContainer.innerHTML = '<p class="text-xs text-slate-400 py-6 text-center">No hay egresos registrados en este mes.</p>';
+            } else {
+                breakdownContainer.innerHTML = sortedCats.map(([cat, amount]) => {
+                    const pct = calc.net > 0 ? ((amount / calc.net) * 100).toFixed(1) : '0.0';
+                    const colorObj = CATEGORY_COLORS[cat] || CATEGORY_COLORS['Otros'];
+                    return `
+                        <div>
+                            <div class="flex justify-between items-center text-xs mb-1">
+                                <span class="font-semibold text-slate-700">${escapeHTML(cat)}</span>
+                                <span class="font-bold text-slate-900">${formatCOP(amount)} <span class="text-slate-400 font-medium">(${pct}%)</span></span>
+                            </div>
+                            <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="${colorObj.bg} h-full rounded-full transition-all duration-300" style="width: ${Math.min(100, Number(pct))}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            const pDay = data.income.payday || 20;
+            const endDay = Math.min(31, pDay + 2);
+            document.getElementById('cat-footer-reminder').innerHTML = `<i class="fa-solid fa-calendar-check text-emerald-600 mr-1.5"></i> Paga tus obligaciones entre el día ${pDay} y el ${endDay}.`;
+            document.getElementById('cat-footer-total').textContent = formatCOP(totalExpenses);
+
+            const aiContextEl = document.getElementById('ai-summary-context');
+            if (aiContextEl) {
+                aiContextEl.textContent = `Analizamos tu ingreso neto real (${formatCOP(calc.net)} COP), tus egresos fijos (${formatCOP(totalExpenses)} COP) y tu distribución de ahorro (${formatCOP(savings)}), ocio (${formatCOP(leisure)}) y urgencias (${formatCOP(emergency)}) para ${formatMonthLabel(appState.currentMonth)}.`;
+            }
+            const aiMonthEl = document.getElementById('ai-empty-month-label');
+            if (aiMonthEl) {
+                aiMonthEl.textContent = formatMonthLabel(appState.currentMonth);
+            }
+
+            updateCharts(totalExpenses, savings, leisure, emergency, sortedCats);
+            renderConsolidatedMonths();
+        }
+
+        // =========================================================
+        // GRÁFICAS CON CHART.JS
+        // =========================================================
+        function updateCharts(totalExpenses, savings, leisure, emergency, sortedCats) {
+            if (typeof Chart === 'undefined') return;
+
+            const distCanvas = document.getElementById('chart-income-dist');
+            if (distCanvas) {
+                const distData = [totalExpenses, savings, leisure, emergency];
+                if (incomeDistChart) {
+                    incomeDistChart.data.datasets[0].data = distData;
+                    incomeDistChart.update('none');
+                } else {
+                    incomeDistChart = new Chart(distCanvas, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Egresos Fijos', 'Ahorro Mínimo', 'Ocio / Cine', 'Urgencias'],
+                            datasets: [{
+                                data: distData,
+                                backgroundColor: ['#f43f5e', '#10b981', '#fbbf24', '#6366f1'],
+                                borderWidth: 2,
+                                borderColor: '#ffffff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '62%',
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { boxWidth: 12, font: { family: 'Inter', size: 11 } }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => `${ctx.label}: ${formatCOP(ctx.raw)}`
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            const catCanvas = document.getElementById('chart-expenses-cat');
+            if (catCanvas) {
+                const labels = sortedCats.length ? sortedCats.map(([c]) => c) : ['Sin gastos'];
+                const values = sortedCats.length ? sortedCats.map(([, v]) => v) : [0];
+                const colors = sortedCats.length
+                    ? sortedCats.map(([c]) => (CATEGORY_COLORS[c] || CATEGORY_COLORS['Otros']).hex)
+                    : ['#cbd5e1'];
+
+                if (expensesCatChart) {
+                    expensesCatChart.data.labels = labels;
+                    expensesCatChart.data.datasets[0].data = values;
+                    expensesCatChart.data.datasets[0].backgroundColor = colors;
+                    expensesCatChart.update('none');
+                } else {
+                    expensesCatChart = new Chart(catCanvas, {
+                        type: 'bar',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'Monto Mensual (COP)',
+                                data: values,
+                                backgroundColor: colors,
+                                borderRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => formatCOP(ctx.raw)
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        font: { family: 'Inter', size: 10 },
+                                        callback: (val) => '$' + (val / 1000).toLocaleString('es-CO') + 'k'
+                                    }
+                                },
+                                x: {
+                                    ticks: { font: { family: 'Inter', size: 10 } }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        // =========================================================
+        // CONSOLIDADO HISTÓRICO POR MESES
+        // =========================================================
+        function renderConsolidatedMonths() {
+            const tbody = document.getElementById('consolidated-months-tbody');
+            const tfoot = document.getElementById('consolidated-months-tfoot');
+            const countBadge = document.getElementById('consolidated-months-count');
+            if (!tbody || !tfoot) return;
+
+            const monthKeys = Object.keys(appState.months).sort();
+            if (countBadge) {
+                countBadge.textContent = `${monthKeys.length} ${monthKeys.length === 1 ? 'mes guardado' : 'meses guardados'}`;
+            }
+
+            let sumNet = 0;
+            let sumExp = 0;
+            let sumSav = 0;
+            let sumLei = 0;
+            let sumEmg = 0;
+
+            tbody.innerHTML = monthKeys.map((mKey) => {
+                const mData = appState.months[mKey];
+                const calc = computeNetIncomeObject(mData.income);
+                const expTotal = mData.expenses.reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+                const sav = Number(mData.allocation?.savings) || 0;
+                const lei = Number(mData.allocation?.leisure) || 0;
+                const emg = Number(mData.allocation?.emergency) || 0;
+
+                sumNet += calc.net;
+                sumExp += expTotal;
+                sumSav += sav;
+                sumLei += lei;
+                sumEmg += emg;
+
+                const isCurrent = mKey === appState.currentMonth;
+                return `
+                    <tr class="${isCurrent ? 'bg-emerald-50/60 font-semibold' : 'hover:bg-slate-50'}">
+                        <td class="py-3 px-3 text-slate-900">
+                            ${escapeHTML(formatMonthLabel(mKey))}
+                            ${isCurrent ? '<span class="ml-1.5 text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full">Activo</span>' : ''}
+                        </td>
+                        <td class="py-3 px-3 text-right text-slate-900">${formatCOP(calc.net)}</td>
+                        <td class="py-3 px-3 text-right text-rose-600">${formatCOP(expTotal)}</td>
+                        <td class="py-3 px-3 text-right text-emerald-700">${formatCOP(sav)}</td>
+                        <td class="py-3 px-3 text-right text-amber-700">${formatCOP(lei)}</td>
+                        <td class="py-3 px-3 text-right text-indigo-700">${formatCOP(emg)}</td>
+                        <td class="py-3 px-3 text-center">
+                            <button type="button" onclick="changeActiveMonth('${mKey}')" class="text-xs font-semibold px-2.5 py-1 rounded-lg ${isCurrent ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'} cursor-pointer">
+                                ${isCurrent ? 'Editando' : 'Abrir'}
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            tfoot.innerHTML = `
+                <tr>
+                    <td class="py-3 px-3 rounded-bl-xl">Total Acumulado (${monthKeys.length} ${monthKeys.length === 1 ? 'mes' : 'meses'})</td>
+                    <td class="py-3 px-3 text-right">${formatCOP(sumNet)}</td>
+                    <td class="py-3 px-3 text-right text-rose-300">${formatCOP(sumExp)}</td>
+                    <td class="py-3 px-3 text-right text-emerald-300">${formatCOP(sumSav)}</td>
+                    <td class="py-3 px-3 text-right text-amber-300">${formatCOP(sumLei)}</td>
+                    <td class="py-3 px-3 text-right text-indigo-300">${formatCOP(sumEmg)}</td>
+                    <td class="py-3 px-3 rounded-br-xl text-center text-[11px] text-slate-300">Consolidado</td>
+                </tr>
+            `;
+        }
+
+        // =========================================================
+        // GESTIÓN DE EGRESOS Y GASTOS (CON CALENDARIO DESPLEGABLE)
+        // =========================================================
+        function handleExpenseSubmit(event) {
+            event.preventDefault();
+            const data = getCurrentMonthData();
+            const editId = document.getElementById('expense-id').value;
+            const name = document.getElementById('expense-name').value.trim();
+            const amount = Math.max(1, Number(document.getElementById('expense-amount').value) || 0);
+            const category = document.getElementById('expense-category').value;
+            const date = document.getElementById('expense-date').value || `${appState.currentMonth}-20`;
+
+            if (!name) return;
+
+            if (editId) {
+                const idx = data.expenses.findIndex((item) => item.id === editId);
+                if (idx !== -1) {
+                    data.expenses[idx] = { id: editId, name, amount, category, date };
+                }
+                showToast('Egreso actualizado');
+            } else {
+                data.expenses.push({
+                    id: 'exp-' + Date.now(),
+                    name,
+                    amount,
+                    category,
+                    date
+                });
+                showToast('Egreso guardado en ' + formatMonthLabel(appState.currentMonth));
+            }
+
+            resetExpenseForm();
+            renderExpenses();
+            updateDashboard();
+            saveState();
+        }
+
+        function editExpense(id) {
+            const data = getCurrentMonthData();
+            const item = data.expenses.find((e) => e.id === id);
+            if (!item) return;
+
+            document.getElementById('expense-id').value = item.id;
+            document.getElementById('expense-name').value = item.name;
+            document.getElementById('expense-amount').value = item.amount;
+            document.getElementById('expense-category').value = item.category;
+            document.getElementById('expense-date').value = item.date || `${appState.currentMonth}-20`;
+
+            document.getElementById('expense-form-title').innerHTML = '<i class="fa-solid fa-pen text-indigo-600 mr-2"></i> Editar Egreso';
+            document.getElementById('expense-submit-btn').textContent = 'Actualizar Egreso';
+        }
+
+        function deleteExpense(id) {
+            const data = getCurrentMonthData();
+            data.expenses = data.expenses.filter((e) => e.id !== id);
+            if (document.getElementById('expense-id').value === id) {
+                resetExpenseForm();
+            }
+            renderExpenses();
+            updateDashboard();
+            saveState();
+            showToast('Egreso eliminado', 'info');
+        }
+
+        function resetExpenseForm() {
+            document.getElementById('expense-id').value = '';
+            document.getElementById('expense-name').value = '';
+            document.getElementById('expense-amount').value = '';
+            document.getElementById('expense-category').value = 'Vivienda';
+            const data = getCurrentMonthData();
+            const dayStr = String(Math.min(28, Math.max(1, data.income.payday || 20))).padStart(2, '0');
+            document.getElementById('expense-date').value = `${appState.currentMonth}-${dayStr}`;
+
+            document.getElementById('expense-form-title').innerHTML = '<i class="fa-solid fa-circle-plus text-emerald-600 mr-2"></i> Agregar Nuevo Egreso';
+            document.getElementById('expense-submit-btn').textContent = 'Guardar Egreso';
+        }
+
+        function filterExpenses(category) {
+            activeExpenseFilter = category;
+            document.querySelectorAll('.cat-filter-btn').forEach((btn) => {
+                if (btn.dataset.cat === category) {
+                    btn.className = 'cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white cursor-pointer';
+                } else {
+                    btn.className = 'cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer';
+                }
+            });
+            renderExpenses();
+        }
+
+        function copyExpensesFromPreviousMonth() {
+            const currentKey = appState.currentMonth;
+            const otherMonths = Object.keys(appState.months)
+                .filter((k) => k < currentKey && appState.months[k].expenses.length > 0)
+                .sort();
+            const sourceKey = otherMonths.length > 0
+                ? otherMonths[otherMonths.length - 1]
+                : Object.keys(appState.months).find((k) => k !== currentKey && appState.months[k].expenses.length > 0);
+
+            if (!sourceKey) {
+                showToast('No hay gastos en otros meses para copiar', 'info');
+                return;
+            }
+
+            const targetData = getCurrentMonthData();
+            const sourceExpenses = appState.months[sourceKey].expenses;
+            targetData.expenses = sourceExpenses.map((item, idx) => {
+                const dayPart = item.date && item.date.includes('-') ? item.date.split('-')[2] : '20';
+                return {
+                    id: `${currentKey}-copy-${Date.now()}-${idx}`,
+                    name: item.name,
+                    amount: item.amount,
+                    category: item.category,
+                    date: `${currentKey}-${dayPart}`
+                };
+            });
+
+            renderExpenses();
+            updateDashboard();
+            saveState();
+            showToast(`Gastos copiados desde ${formatMonthLabel(sourceKey)}`);
+        }
+
+        function renderExpenses() {
+            const data = getCurrentMonthData();
+            const container = document.getElementById('expenses-list-container');
+            const subtotalsList = document.getElementById('category-subtotals-list');
+            const copyBtn = document.getElementById('btn-copy-prev-expenses');
+
+            const totalAll = data.expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+            document.getElementById('expenses-count-badge').textContent = `${data.expenses.length} ${data.expenses.length === 1 ? 'ítem' : 'ítems'}`;
+            document.getElementById('expenses-total-badge').textContent = `Total: ${formatCOP(totalAll)}`;
+            document.getElementById('expenses-payday-hint').textContent = `Obligaciones sincronizadas para cubrir con tu pago del día ${data.income.payday} (${formatMonthLabel(appState.currentMonth)}).`;
+
+            if (copyBtn) {
+                const hasOtherMonths = Object.keys(appState.months).some((k) => k !== appState.currentMonth && appState.months[k].expenses.length > 0);
+                if (data.expenses.length === 0 && hasOtherMonths) {
+                    copyBtn.classList.remove('hidden');
+                    copyBtn.classList.add('inline-flex');
+                } else {
+                    copyBtn.classList.add('hidden');
+                    copyBtn.classList.remove('inline-flex');
+                }
+            }
+
+            // Subtotales por categoría
+            const subtotals = {};
+            data.expenses.forEach((e) => {
+                subtotals[e.category] = (subtotals[e.category] || 0) + (Number(e.amount) || 0);
+            });
+            const subEntries = Object.entries(subtotals).sort((a, b) => b[1] - a[1]);
+            subtotalsList.innerHTML = subEntries.length === 0
+                ? '<p class="text-slate-400">Sin registros en este mes.</p>'
+                : subEntries.map(([cat, val]) => `
+                    <div class="flex justify-between items-center py-1">
+                        <span class="text-slate-600 font-medium">${escapeHTML(cat)}</span>
+                        <span class="font-bold text-slate-900">${formatCOP(val)}</span>
+                    </div>
+                `).join('');
+
+            // Lista filtrada
+            const filtered = activeExpenseFilter === 'Todas'
+                ? data.expenses
+                : data.expenses.filter((e) => e.category === activeExpenseFilter);
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 px-4 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                        <p class="text-sm font-semibold text-slate-600">No hay egresos registrados en esta vista</p>
+                        <p class="text-xs text-slate-400 mt-1">Usa el formulario de la izquierda para agregar un gasto con su fecha en calendario.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map((item) => {
+                const colorObj = CATEGORY_COLORS[item.category] || CATEGORY_COLORS['Otros'];
+                return `
+                    <div class="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50/50 transition">
+                        <div class="space-y-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-sm font-bold text-slate-900">${escapeHTML(item.name)}</span>
+                                <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${colorObj.soft}">${escapeHTML(item.category)}</span>
+                            </div>
+                            <p class="text-xs text-slate-500">
+                                <i class="fa-regular fa-calendar mr-1 text-slate-400"></i> Fecha: <strong>${formatDateReadable(item.date)}</strong>
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-base font-extrabold text-slate-900">${formatCOP(item.amount)}</span>
+                            <button type="button" onclick="editExpense('${item.id}')" class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer" title="Editar">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button type="button" onclick="deleteExpense('${item.id}')" class="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer" title="Eliminar">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // =========================================================
+        // GENERACIÓN LOCAL Y SEGURA DE PDF (jsPDF)
+        // =========================================================
+        function generateSecurePDF() {
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                showToast('Cargando librería PDF, intenta de nuevo en 1 segundo', 'info');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const data = getCurrentMonthData();
+            const calc = computeNetIncomeObject(data.income);
+            const totalExpenses = data.expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+            const freeCash = Math.max(0, calc.net - totalExpenses);
+            const monthLabel = formatMonthLabel(appState.currentMonth);
+
+            // Encabezado oscuro corporativo
+            doc.setFillColor(15, 23, 42);
+            doc.rect(0, 0, 210, 34, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(17);
+            doc.text('Finanzas Smart COP - Resumen Financiero', 14, 15);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9.5);
+            doc.setTextColor(167, 243, 208);
+            doc.text(`Periodo: ${monthLabel}  |  Corte de Pago: Dia ${data.income.payday}  |  Generado 100% Local (Offline)`, 14, 23);
+
+            // Resumen numérico
+            let y = 44;
+            doc.setTextColor(15, 23, 42);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.text('1. Resumen Ejecutivo del Mes', 14, y);
+            y += 7;
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            const summaryLines = [
+                `Ingreso Bruto Total: ${formatCOP(calc.gross)}  (Salario: ${formatCOP(calc.salary)} + Aux. Transporte: ${formatCOP(calc.transport)} + Extras: ${formatCOP(calc.extras)})`,
+                `Deducciones de Ley: -${formatCOP(calc.totalDeductions)}  (Salud 4%: -${formatCOP(calc.healthDed)} | Pension 4%: -${formatCOP(calc.pensionDed)})`,
+                `Ingreso Neto Real Disponible: ${formatCOP(calc.net)}`,
+                `Total Egresos Fijos: ${formatCOP(totalExpenses)}  |  Flujo Libre Disponible: ${formatCOP(freeCash)}`,
+                `Distribucion Flujo Libre -> Ahorro: ${formatCOP(data.allocation.savings)} | Ocio: ${formatCOP(data.allocation.leisure)} | Urgencias: ${formatCOP(data.allocation.emergency)}`
+            ];
+            summaryLines.forEach((line) => {
+                doc.text(line, 14, y);
+                y += 6;
+            });
+
+            // Captura de gráficas si existen en pantalla
+            y += 4;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.text('2. Graficas de Distribucion y Egresos', 14, y);
+            y += 5;
+
+            try {
+                const c1 = document.getElementById('chart-income-dist');
+                const c2 = document.getElementById('chart-expenses-cat');
+                if (c1 && c2) {
+                    const img1 = c1.toDataURL('image/png', 1.0);
+                    const img2 = c2.toDataURL('image/png', 1.0);
+                    doc.addImage(img1, 'PNG', 14, y, 86, 58);
+                    doc.addImage(img2, 'PNG', 108, y, 88, 58);
+                    y += 65;
+                }
+            } catch (err) {}
+
+            // Listado de egresos
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.text('3. Detalle de Egresos Registrados', 14, y);
+            y += 7;
+
+            doc.setFontSize(9.5);
+            if (data.expenses.length === 0) {
+                doc.setFont('helvetica', 'normal');
+                doc.text('No hay egresos registrados en este periodo.', 14, y);
+            } else {
+                data.expenses.forEach((exp) => {
+                    if (y > 275) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(`• ${exp.name}`, 14, y);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(`[${exp.category}] - Fecha: ${formatDateReadable(exp.date)} - ${formatCOP(exp.amount)}`, 82, y);
+                    y += 6;
+                });
+            }
+
+            doc.save(`Resumen_Financiero_${appState.currentMonth}.pdf`);
+            showToast('PDF seguro descargado localmente');
+        }
+
+        // =========================================================
+        // MODAL DE REINICIO GENERAL
+        // =========================================================
+        function confirmResetAll() {
+            const modal = document.getElementById('confirm-modal');
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            document.getElementById('modal-title').textContent = 'Reiniciar mes actual';
+            document.getElementById('modal-message').textContent = `¿Deseas restaurar los valores iniciales de Colombia 2026 para ${formatMonthLabel(appState.currentMonth)}?`;
+
+            confirmBtn.onclick = () => {
+                appState.months[appState.currentMonth] = createDefaultMonthData(appState.currentMonth, false);
+                syncInputsFromCurrentMonth();
+                saveState();
+                closeConfirmModal();
+                showToast('Mes restaurado a valores base 2026');
+            };
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // =========================================================
+        // ASESOR DE IA SEGURO (GEMINI API CON CLAVE LOCAL PRIVADA)
+        // =========================================================
+        function getSavedGeminiKey() {
+            try {
+                return (localStorage.getItem(GEMINI_KEY_STORAGE) || '').trim();
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function initAiKeyUI() {
+            const savedKey = getSavedGeminiKey();
+            const input = document.getElementById('gemini-api-key-input');
+            const dot = document.getElementById('ai-key-status-dot');
+            const badge = document.getElementById('ai-security-badge');
+            const isGithubPages = window.location.hostname.includes('github.io');
+
+            if (input && savedKey) {
+                input.value = savedKey;
+            }
+
+            if (savedKey) {
+                if (dot) {
+                    dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+                    dot.title = 'API Key personal activa localmente';
+                }
+                if (badge) {
+                    badge.textContent = 'Clave Personal Activa (Solo en tu navegador)';
+                    badge.className = 'text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full';
+                }
+            } else if (isGithubPages) {
+                if (dot) {
+                    dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+                    dot.title = 'Configura tu API Key gratuita en Asesor de IA';
+                }
+                if (badge) {
+                    badge.textContent = 'Requiere API Key gratuita para GitHub Pages';
+                    badge.className = 'text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-0.5 rounded-full';
+                }
+            } else {
+                if (dot) {
+                    dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+                    dot.title = 'Asesor de IA listo';
+                }
+            }
+        }
+
+        function saveGeminiApiKey() {
+            const input = document.getElementById('gemini-api-key-input');
+            if (!input) return;
+            const cleaned = input.value.replace(/\s+/g, '').trim();
+            if (!cleaned) {
+                showToast('Pega primero tu clave de Google AI Studio', 'info');
+                return;
+            }
+            if (!(cleaned.startsWith('AIza') || cleaned.startsWith('AQ.')) || cleaned.length < 25) {
+                showToast('La clave debe empezar por "AIza..." o "AQ." y estar completa', 'info');
+                return;
+            }
+            try {
+                localStorage.setItem(GEMINI_KEY_STORAGE, cleaned);
+                input.value = cleaned;
+                initAiKeyUI();
+                showToast('API Key guardada de forma privada en tu navegador');
+            } catch (e) {
+                showToast('No se pudo guardar en localStorage', 'info');
+            }
+        }
+
+        function deleteGeminiApiKey() {
+            try {
+                localStorage.removeItem(GEMINI_KEY_STORAGE);
+            } catch (e) {}
+            const input = document.getElementById('gemini-api-key-input');
+            if (input) input.value = '';
+            initAiKeyUI();
+            showToast('API Key eliminada del navegador', 'info');
+        }
+
+        function toggleApiKeyVisibility() {
+            const input = document.getElementById('gemini-api-key-input');
+            const icon = document.getElementById('ai-key-eye-icon');
+            if (!input || !icon) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash text-xs';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye text-xs';
+            }
+        }
+
+        function formatAiMarkdown(rawText) {
+            const safe = escapeHTML(rawText);
+            return safe
+                .replace(/^### (.*)$/gm, '<h4 class="text-sm font-extrabold text-emerald-300 mt-4 mb-1.5">$1</h4>')
+                .replace(/^## (.*)$/gm, '<h3 class="text-base font-extrabold text-white mt-4 mb-2">$1</h3>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-bold">$1</strong>')
+                .replace(/^\s*[-*]\s+(.*)$/gm, '<li class="ml-4 list-disc text-slate-200 mb-1">$1</li>')
+                .replace(/\n{2,}/g, '</p><p class="text-xs sm:text-sm text-slate-200 leading-relaxed mb-2.5">')
+                .replace(/\n/g, '<br>');
+        }
+
+        function handleCustomAiQuestion(event) {
+            event.preventDefault();
+            const qInput = document.getElementById('ai-custom-question');
+            if (!qInput) return;
+            const question = qInput.value.trim();
+            if (!question) return;
+            askGeminiAdvisor('custom', question);
+        }
+
+        async function askGeminiAdvisor(mode = 'full', customQuestion = '') {
+            const responseBox = document.getElementById('ai-response-container');
+            const fullBtn = document.getElementById('btn-ai-full-analysis');
+            if (!responseBox) return;
+
+            const savedKey = getSavedGeminiKey();
+            const isGithubPages = window.location.hostname.includes('github.io');
+
+            if (isGithubPages && !savedKey) {
+                responseBox.innerHTML = `
+                    <div class="text-center space-y-2 py-3">
+                        <i class="fa-solid fa-key text-amber-400 text-2xl"></i>
+                        <p class="text-sm font-bold text-amber-300">Configura tu API Key gratuita de Google AI Studio arriba</p>
+                        <p class="text-xs text-slate-300 max-w-md mx-auto">
+                            Al abrir la app desde GitHub Pages necesitas pegar tu propia API Key en el recuadro blanco superior y presionar <strong>Guardar clave</strong> para proteger tu cuenta.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            const data = getCurrentMonthData();
+            const calc = computeNetIncomeObject(data.income);
+            const totalExpenses = data.expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+            const freeCash = Math.max(0, calc.net - totalExpenses);
+            const monthLabel = formatMonthLabel(appState.currentMonth);
+
+            // Resumen anonimizado sin datos personales sensibles
+            const expensesSummary = data.expenses.length > 0
+                ? data.expenses.map((e) => `- ${e.name} (${e.category}): ${formatCOP(e.amount)}`).join('\n')
+                : '- Sin egresos registrados';
+
+            const financialSnapshot = `
+Periodo analizado: ${monthLabel} (Colombia 2026)
+Día de pago mensual: Día ${data.income.payday}
+Ingreso Bruto Total: ${formatCOP(calc.gross)}
+Deducciones de Ley (Salud/Pensión): ${formatCOP(calc.totalDeductions)}
+Ingreso Neto Real Disponible: ${formatCOP(calc.net)}
+Total Egresos Fijos: ${formatCOP(totalExpenses)}
+Flujo Libre Disponible: ${formatCOP(freeCash)}
+Distribución actual del flujo libre:
+- Ahorro mensual: ${formatCOP(data.allocation.savings)}
+- Presupuesto ocio/salidas: ${formatCOP(data.allocation.leisure)}
+- Colchón de urgencias: ${formatCOP(data.allocation.emergency)}
+Desglose de egresos:
+${expensesSummary}
+            `.trim();
+
+            const userPrompt = mode === 'full'
+                ? `Analiza mi presupuesto mensual de Colombia 2026 y dame un plan financiero práctico dividido en: 1) Diagnóstico de salud financiera (porcentajes), 2) Plan de acción para el día ${data.income.payday} de pago, 3) Recomendaciones para optimizar gastos y hacer crecer mi ahorro en Colombia. Sé claro, concreto y usa viñetas.\n\nDatos:\n${financialSnapshot}`
+                : `Responde de forma clara, práctica y adaptada al contexto financiero de Colombia 2026 a esta consulta: "${customQuestion}"\n\nBasándote en estos datos de mi presupuesto:\n${financialSnapshot}`;
+
+            const systemPrompt = 'Actúa como un asesor financiero certificado experto en finanzas personales en Colombia (2026). Usa lenguaje cercano, directo, práctico y en pesos colombianos (COP). No pidas ni menciones datos personales.';
+
+            if (fullBtn) {
+                fullBtn.disabled = true;
+                fullBtn.classList.add('opacity-70');
+            }
+
+            responseBox.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-8 space-y-3">
+                    <div class="w-9 h-9 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-xs sm:text-sm font-semibold text-emerald-300">Analizando tus cifras de ${escapeHTML(monthLabel)} con Gemini...</p>
+                </div>
+            `;
+
+            const apiKey = savedKey || '';
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${encodeURIComponent(apiKey)}`;
+            const payload = {
+                contents: [{ parts: [{ text: userPrompt }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                }
+            };
+
+            const delays = [1000, 2000, 4000];
+            let lastErrorDetail = '';
+
+            for (let attempt = 0; attempt <= delays.length; attempt++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errJson = await response.json().catch(() => ({}));
+                        lastErrorDetail = errJson?.error?.message || `Error HTTP ${response.status}`;
+                        if (response.status === 400 || response.status === 401 || response.status === 403) {
+                            break;
+                        }
+                        throw new Error(lastErrorDetail);
+                    }
+
+                    const result = await response.json();
+                    const generatedText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                    if (!generatedText) {
+                        throw new Error('Respuesta vacía del modelo');
+                    }
+
+                    responseBox.innerHTML = `
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
+                                <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-circle-check"></i> Recomendación Financiera • ${escapeHTML(monthLabel)}
+                                </span>
+                                <span class="text-[11px] text-slate-400">Análisis privado</span>
+                            </div>
+                            <div class="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                                <p class="text-xs sm:text-sm text-slate-200 leading-relaxed mb-2.5">${formatAiMarkdown(generatedText)}</p>
+                            </div>
+                        </div>
+                    `;
+
+                    if (fullBtn) {
+                        fullBtn.disabled = false;
+                        fullBtn.classList.remove('opacity-70');
+                    }
+                    return;
+                } catch (err) {
+                    lastErrorDetail = err.message || 'Error de red';
+                    if (attempt < delays.length) {
+                        await new Promise((r) => setTimeout(r, delays[attempt]));
+                    }
+                }
+            }
+
+            if (fullBtn) {
+                fullBtn.disabled = false;
+                fullBtn.classList.remove('opacity-70');
+            }
+
+            responseBox.innerHTML = `
+                <div class="text-center space-y-2 py-4">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-400 text-2xl"></i>
+                    <p class="text-sm font-bold text-rose-300">No se pudo conectar con el Asesor de IA</p>
+                    <p class="text-xs text-slate-300 max-w-md mx-auto">
+                        ${escapeHTML(lastErrorDetail || 'Verifica tu conexión a internet o revisa que tu API Key de Google AI Studio sea válida.')}
+                    </p>
+                </div>
+            `;
+        }
+
+        // Exponer funciones al ámbito global window explícitamente
+        window.openAuthModal = openAuthModal;
+        window.closeAuthModal = closeAuthModal;
+        window.switchAuthMode = switchAuthMode;
+        window.handleAuthFormSubmit = handleAuthFormSubmit;
+        window.handleUserLogout = handleUserLogout;
+        window.saveCustomFirebaseConfig = saveCustomFirebaseConfig;
+        window.switchTab = switchTab;
+        window.changeActiveMonth = changeActiveMonth;
+        window.calculateIncome = calculateIncome;
+        window.previewExtraIncome = previewExtraIncome;
+        window.saveExtraIncome = saveExtraIncome;
+        window.resetIncomeTo2026 = resetIncomeTo2026;
+        window.handleSliderInput = handleSliderInput;
+        window.resetSlidersToDefault = resetSlidersToDefault;
+        window.handleExpenseSubmit = handleExpenseSubmit;
+        window.editExpense = editExpense;
+        window.deleteExpense = deleteExpense;
+        window.resetExpenseForm = resetExpenseForm;
+        window.filterExpenses = filterExpenses;
+        window.copyExpensesFromPreviousMonth = copyExpensesFromPreviousMonth;
+        window.generateSecurePDF = generateSecurePDF;
+        window.confirmResetAll = confirmResetAll;
+        window.closeConfirmModal = closeConfirmModal;
+        window.saveGeminiApiKey = saveGeminiApiKey;
+        window.deleteGeminiApiKey = deleteGeminiApiKey;
+        window.toggleApiKeyVisibility = toggleApiKeyVisibility;
+        window.handleCustomAiQuestion = handleCustomAiQuestion;
+        window.askGeminiAdvisor = askGeminiAdvisor;
+
+        // =========================================================
+        // INICIALIZACIÓN AL CARGAR LA VENTANA
+        // =========================================================
         function initApp() {
             try {
                 const cached = localStorage.getItem(LOCAL_CACHE_KEY);
@@ -1053,6 +2530,12 @@
                     }
                 }
             } catch (e) {}
+            initAiKeyUI();
             syncInputsFromCurrentMonth();
+            initFirebaseAndAuth();
         }
-// ... existing code ... -->
+
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
